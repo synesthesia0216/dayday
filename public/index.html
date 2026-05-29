@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>Day-Day</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====== 登录界面 ====== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">DAY-DAY</div>
+    <div class="login-sub">登录以继续</div>
+    <div class="login-step" id="loginStep1">
+      <input class="login-input" type="email" id="loginEmail" placeholder="Email">
+      <button class="login-btn" id="btnSendCode">发送验证码</button>
+      <div class="login-hint" id="loginHint"></div>
+    </div>
+    <div class="login-step" id="loginStep2" style="display:none;">
+      <div class="login-email-label" id="loginEmailLabel"></div>
+      <input class="login-input code-input" type="text" id="loginCode" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="off">
+      <button class="login-btn" id="btnVerify">验证</button>
+      <button class="login-back" id="btnBack">← 更换邮箱</button>
+      <div class="login-hint" id="loginHint2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 主应用（登录后可见） ====== -->
+<div class="app" id="app" style="display:none;">
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/></svg>
+      <span class="logo-text">DAY-DAY</span>
+    </div>
+    <button class="drawer-close" id="drawerToggle">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </div>
+  <nav class="nav" id="nav">
+    <a class="nav-link active" data-panel="today">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>今日</span>
+    </a>
+    <a class="nav-link" data-panel="notes">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>笔记</span>
+      <span class="badge" id="badgeNotes">0</span>
+    </a>
+    <a class="nav-link" data-panel="diary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>日记</span>
+      <span class="badge" id="badgeDiary">0</span>
+    </a>
+    <a class="nav-link" data-panel="story">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <span>故事</span>
+      <span class="badge" id="badgeStory">0</span>
+    </a>
+    <a class="nav-link" data-panel="growth">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>印记</span>
+    </a>
+    <a class="nav-link" data-panel="reminders">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/></svg>
+      <span>待办</span>
+      <span class="badge" id="badgeReminders">0</span>
+    </a>
+  </nav>
+  <div class="drawer-foot">
+    <div class="drawer-stats" id="drawerStats"></div>
+    <button class="logout-btn" id="btnLogout">退出</button>
+  </div>
+</aside>
+
+<button class="drawer-expand" id="drawerExpand">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+
+<main class="main" id="main">
+
+  <!-- 今日 -->
+  <section class="panel active" id="panel-today">
+    <div class="today-grid">
+      <div class="today-left">
+        <div class="clock" id="clock">
+          <div class="clock-time" id="clockTime">00:00</div>
+          <div class="clock-meta">
+            <span id="clockDate"></span>
+            <span class="clock-sep">·</span>
+            <span id="clockPhase"></span>
+          </div>
+        </div>
+        <div class="today-streak" id="todayStreak"></div>
+        <div class="weekly-card" id="weeklyCard"></div>
+      </div>
+      <div class="today-right">
+        <div class="calendar" id="calendar"></div>
+        <div class="mood-panel" id="moodPanel" style="display:none;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 笔记 -->
+  <section class="panel" id="panel-notes">
+    <div class="topbar">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="搜索">
+      </div>
+      <div class="chips" id="typeChips"></div>
+      <button class="btn" id="btnNewNote">+</button>
+    </div>
+    <div class="card-grid" id="notesGrid"></div>
+    <div class="empty" id="notesEmpty">暂无笔记</div>
+  </section>
+
+  <!-- 日记 -->
+  <section class="panel" id="panel-diary">
+    <div class="topbar">
+      <h2>日记</h2>
+      <button class="btn" id="btnNewDiary">+</button>
+    </div>
+    <div class="diary-list" id="diaryList"></div>
+    <div class="empty" id="diaryEmpty">暂无日记</div>
+  </section>
+
+  <!-- 故事 -->
+  <section class="panel" id="panel-story">
+    <div class="topbar">
+      <h2 id="storyTitle">故事</h2>
+      <div id="storyDevBtns" style="display:none;"><button class="btn" id="btnNewStory">+</button></div>
+    </div>
+    <div class="story-grid" id="storyList"></div>
+    <div class="empty" id="storyEmpty">暂无章节</div>
+  </section>
+
+  <!-- 印记 -->
+  <section class="panel" id="panel-growth">
+    <div class="growth-stage" id="growthStage"></div>
+    <div class="growth-detail" id="growthDetail"></div>
+  </section>
+
+  <!-- 待办 -->
+  <section class="panel" id="panel-reminders">
+    <div class="topbar"><h2>待办</h2><button class="btn" id="btnNewReminder">+</button></div>
+    <div class="todo-list" id="remindersList"></div>
+    <div class="empty" id="remindersEmpty">暂无待办</div>
+  </section>
+</main>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <input class="modal-title" id="modalTitle" placeholder="标题">
+      <button class="modal-close" id="modalClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-meta" id="modalMeta"></div>
+    <div class="modal-body">
+      <textarea class="modal-textarea" id="modalContent" placeholder="写点什么..."></textarea>
+      <div class="modal-images" id="modalImages"></div>
+      <input type="file" id="modalFileInput" accept="image/*" style="display:none;" multiple>
+    </div>
+    <div class="modal-foot" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- 故事阅读 -->
+<div class="overlay" id="storyOverlay">
+  <div class="story-reader" id="storyReader">
+    <button class="story-close" id="storyClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="story-body" id="storyBody"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
