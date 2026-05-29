@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: dayday
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
