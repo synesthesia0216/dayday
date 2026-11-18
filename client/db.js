@@ -2,9 +2,9 @@
 // 替代 Node.js 服务器的所有 JSON 文件存储
 
 const DB_NAME = 'dayday';
-const DB_VER = 1;
-const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory'];
-const DATA_STORES = new Set(['notes','diary','checkins','reminders','storyCollection']);
+const DB_VER = 2;
+const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory','ledger'];
+const DATA_STORES = new Set(['notes','diary','checkins','reminders','storyCollection','ledger']);
 
 let _db = null;
 let _scope = 'full';
@@ -119,6 +119,13 @@ const db = {
     create: data => create('reminders', data),
     update: (id, data) => update('reminders', id, data),
     delete: id => remove('reminders', id),
+  },
+  ledger: {
+    list: () => list('ledger'),
+    get: id => get('ledger', id),
+    create: data => create('ledger', data),
+    update: (id, data) => update('ledger', id, data),
+    delete: id => remove('ledger', id),
   },
   growth: {
     get: async () => {

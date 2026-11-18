@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday;
+let db, auth, moonCalc, birthday, ledger;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -101,6 +101,8 @@ async function loadModules() {
   auth = (await import('../client/auth.js')).default;
   moonCalc = (await import('../client/moon-calc.js')).default;
   birthday = (await import('../client/birthday.js')).default;
+  ledger = (await import('../client/ledger.js')).default;
+  ledger.init({ db, toast });
   // Load local mythology
   try {
     const r = await fetch('data/mythology.json');
@@ -116,8 +118,8 @@ if (token) tryAutoLogin(); else showLogin();
 async function tryAutoLogin() {
   try {
     isLite = (token === 'lite-unlocked');
-    if (db) db.setScope(isLite ? 'lite' : 'full');
     await loadModules();
+    if (db) db.setScope(isLite ? 'lite' : 'full');
     const user = await auth.getMe(token);
     if (user) { await showApp(); return; }
   } catch(e) {}
@@ -508,7 +510,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders };
+  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }

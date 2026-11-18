@@ -101,6 +101,10 @@
       </span>
     </div>
   </div>
+  <button type="button" class="drawer-ledger" id="drawerLedger">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="9.5" y1="12" x2="14.5" y2="12"/></svg>
+    <span>记账</span>
+  </button>
   <div class="drawer-foot">
     <div class="drawer-stats" id="drawerStats"></div>
     <div class="demo-badge" id="demoBadge" style="display:none;">moonlight</div>
@@ -308,6 +312,48 @@
     <div class="topbar"><h2>坐标日志</h2><button class="btn" id="btnNewReminder">+ 设定航向</button></div>
     <div class="coord-list" id="remindersList"></div>
     <div class="empty" id="remindersEmpty">尚未设定航向<br>立下一个坐标，点亮前进的方向</div>
+  </section>
+
+  <!-- 记账 -->
+  <section class="panel" id="panel-ledger">
+    <div class="topbar ledger-topbar">
+      <button type="button" class="btn btn-icon" id="ledgerBack" title="返回观星台">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="ledger-month-nav">
+        <button type="button" class="btn btn-icon" id="ledgerMonthPrev">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="ledger-month-label" id="ledgerMonthLabel"></span>
+        <button type="button" class="btn btn-icon" id="ledgerMonthNext">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="panel-scroll ledger-scroll">
+      <div class="ledger-summary">
+        <div class="ledger-summary-label">本月支出</div>
+        <div class="ledger-summary-amount" id="ledgerExpense">¥0.00</div>
+        <div class="ledger-summary-sub">
+          <span>收入 <b id="ledgerIncome">¥0.00</b></span>
+          <span>结余 <b id="ledgerBalance">¥0.00</b></span>
+        </div>
+        <div class="ledger-summary-meta">
+          <span>较上月 <b id="ledgerDelta">—</b></span>
+          <span>日均 <b id="ledgerDaily">¥0.00</b></span>
+        </div>
+      </div>
+      <div class="card ledger-card">
+        <div class="card-title">支出分类</div>
+        <div class="ledger-chart" id="ledgerChart"></div>
+      </div>
+      <div class="card ledger-card">
+        <div class="card-title">最近账单</div>
+        <div class="ledger-list" id="ledgerList"></div>
+        <button type="button" class="ledger-expand" id="ledgerExpand" style="display:none;"></button>
+      </div>
+    </div>
+    <button type="button" class="ledger-fab" id="ledgerFab">＋</button>
   </section>
 </main>
 </div>
@@ -572,6 +618,44 @@
     <div class="share-card-foot">
       <button class="share-card-save" id="btnSaveShareCard">保存 / 分享</button>
     </div>
+  </div>
+</div>
+
+<!-- 快速记账弹层 -->
+<div class="overlay ledger-sheet-overlay" id="ledgerSheet">
+  <div class="ledger-sheet">
+    <div class="ledger-sheet-head">
+      <span class="ledger-sheet-title" id="ledgerSheetTitle">记一笔</span>
+      <button class="modal-close" id="ledgerSheetClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="ledger-sheet-tabs" id="ledgerSheetTabs">
+      <button type="button" class="on" data-mode="expense">支出</button>
+      <button type="button" data-mode="income">收入</button>
+    </div>
+    <div class="ledger-amount" id="ledgerAmount">¥ 0.00</div>
+    <div class="ledger-cat-grid" id="ledgerCatGrid"></div>
+    <div class="ledger-sheet-row">
+      <input class="ledger-note" id="ledgerNote" placeholder="备注（可选）" maxlength="20">
+      <input class="ledger-date" id="ledgerDate" type="date">
+    </div>
+    <div class="ledger-keypad" id="ledgerKeypad">
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+      <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="⌫">⌫</button>
+    </div>
+    <button type="button" class="ledger-save" id="ledgerSave" disabled>✓ 记一笔</button>
+  </div>
+</div>
+
+<!-- 账单条目操作 -->
+<div class="overlay ledger-action-overlay" id="ledgerAction">
+  <div class="ledger-action">
+    <button type="button" class="ledger-action-btn" id="ledgerActionEdit">编辑</button>
+    <button type="button" class="ledger-action-btn danger" id="ledgerActionDelete">删除</button>
+    <button type="button" class="ledger-action-btn cancel" id="ledgerActionCancel">取消</button>
   </div>
 </div>
 
