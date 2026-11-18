@@ -112,6 +112,19 @@ async function getMoonPhase(cachedOnly = false) {
   return local;
 }
 
+// ====== NASA SVS Dial-A-Moon 2026 每日真实月面帧 ======
+// 帧公式：frame = (日序-1)*24 + UTC小时 + 1；2026 全年 8760 帧（svs.gsfc.nasa.gov/5587）
+function getSvsFrame(date) {
+  const d = date || new Date();
+  const doy = Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000);
+  const frame = (doy - 1) * 24 + d.getUTCHours() + 1;
+  return {
+    frame,
+    dateKey: d.toISOString().slice(0, 10),
+    url: `https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005587/frames/730x730_1x1_30p/moon.${String(frame).padStart(4, '0')}.jpg`,
+  };
+}
+
 // Export
-const moonCalc = { getPhase, getMoonPhase, PHASE_NAMES };
+const moonCalc = { getPhase, getMoonPhase, getSvsFrame, PHASE_NAMES };
 export default moonCalc;

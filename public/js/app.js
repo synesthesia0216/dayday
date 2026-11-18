@@ -640,7 +640,10 @@ function showMoonPicker(ds, currentMoon) {
     </div>
     <div class="moon-modal-body">
       <div class="moon-modal-live">
-        <canvas class="moon-modal-live-canvas" id="moonModalCanvas" width="72" height="72"></canvas>
+        <div class="moon-modal-live-wrap">
+          <canvas class="moon-modal-live-canvas" id="moonModalCanvas" width="72" height="72"></canvas>
+          <img class="moon-modal-live-real" id="moonModalImg" alt="">
+        </div>
         <div>
           <div class="moon-modal-live-name">${moonInfo.name} · ${moonInfo.enName}</div>
           <div class="moon-modal-live-info">光照 ${moonInfo.illumination}% · 月龄 ${moonInfo.age}天</div>
@@ -660,6 +663,11 @@ function showMoonPicker(ds, currentMoon) {
 
   // Render realistic moon on the modal canvas
   setTimeout(() => renderMoonPhase($('moonModalCanvas'), moonInfo), 50);
+  // 同步真实月面影像（若 hero 已加载）
+  setTimeout(() => {
+    const mi = $('moonModalImg');
+    if (mi && state.moonImgUrl) { mi.src = state.moonImgUrl; mi.classList.add('loaded'); }
+  }, 80);
 
   // Close button
   $('moonModalClose').onclick = () => { $('moonOverlay').classList.remove('open'); state.selectedMoon = null; };
@@ -896,6 +904,9 @@ async function loadStargaze() {
     $('moonHeroMeta').textContent = '光照 ' + m.illumination + '% · 月龄 ' + m.age + ' 天';
     $('moonHeroNext').textContent = '下次满月 ' + m.nextFullMoon + ' · 下次新月 ' + m.nextNewMoon;
   }
+  // 真实月面影像（NASA SVS · 每日帧，缓存 IndexedDB，失败静默回退 canvas 渲染）
+  if (!isLite) loadMoonImage();
+  $('moonHero').onclick = () => showMoonPicker(new Date().toISOString().slice(0, 10), state.todayMood || '');
   state.selectedMoon = null;
   // Sync today's mood for diary
   state.todayMood = state.todayCheckin ? state.todayCheckin.mood : '';
@@ -926,6 +937,52 @@ async function loadStargaze() {
       el.style.animationDelay = (i * 45) + 'ms';
       el.classList.add('stg-enter');
     });
+  }
+}
+
+// ====== 真实月面影像（NASA SVS Dial-A-Moon） ======
+// 帧公式本地计算（无需 API）；设备端 CapacitorHttp 原生 fetch 可绕过 CORS 缓存 blob；
+// 浏览器端 <img> 直载不受 CORS 限制（仅显示，不读取像素）。失败静默回退 canvas 渲染。
+async function loadMoonImage() {
+  const img = $('moonHeroImg');
+  const src = $('moonHeroSrc');
+  if (!img || !src) return;
+  const frameInfo = moonCalc.getSvsFrame(new Date());
+  const dateKey = frameInfo.dateKey;
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  const apply = url => {
+    img.onload = () => {
+      img.classList.add('loaded');
+      src.textContent = 'NASA SVS · 每日实拍';
+      state.moonImgUrl = url;
+    };
+    img.onerror = () => { img.classList.remove('loaded'); src.textContent = ''; state.moonImgUrl = null; };
+    img.src = url;
+  };
+  try {
+    // 1) 缓存命中（IndexedDB blob）
+    const cached = await db.moonFrames.get(dateKey);
+    if (cached && cached.blob) {
+      apply(URL.createObjectURL(cached.blob));
+      src.textContent = 'NASA SVS · 缓存帧';
+      state.moonImgUrl = img.src;
+      return;
+    }
+    if (!navigator.onLine) return;
+    // 2) 设备端：原生 fetch 拉取并缓存（CapacitorHttp 绕过 CORS）
+    if (isNative) {
+      const r = await fetch(frameInfo.url);
+      if (r.ok) {
+        const blob = await r.blob();
+        await db.moonFrames.put(dateKey, blob, { source: 'svs', frame: frameInfo.frame });
+        apply(URL.createObjectURL(blob));
+        return;
+      }
+    }
+    // 3) 浏览器端：<img> 直载（显示级，无 CORS 阻断）
+    apply(frameInfo.url);
+  } catch (e) {
+    console.warn('moon image fallback to canvas:', e);
   }
 }
 

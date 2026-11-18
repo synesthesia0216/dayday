@@ -2,9 +2,10 @@
 // 替代 Node.js 服务器的所有 JSON 文件存储
 
 const DB_NAME = 'dayday';
-const DB_VER = 2;
-const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory','ledger'];
+const DB_VER = 3;
+const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory','ledger','moonFrames'];
 const DATA_STORES = new Set(['notes','diary','checkins','reminders','storyCollection','ledger']);
+const CACHE_STORES = new Set(['moonFrames']);
 
 let _db = null;
 let _scope = 'full';
@@ -41,11 +42,12 @@ async function clear(store) { await openDB(); return promisify(tx(store, 'readwr
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-// ====== Backup / Restore ======
+// ====== Backup / Restore（缓存 store 不参与备份，避免 Blob 撑爆备份文件） ======
 async function exportAll() {
   await openDB();
   const dump = {};
   for (const store of STORES) {
+    if (CACHE_STORES.has(store)) continue;
     dump[store] = await promisify(tx(store, 'readonly').getAll());
   }
   return dump;
@@ -54,9 +56,11 @@ async function exportAll() {
 async function importAll(dump) {
   await openDB();
   for (const store of STORES) {
+    if (CACHE_STORES.has(store)) continue;
     await promisify(tx(store, 'readwrite').clear());
   }
   for (const store of STORES) {
+    if (CACHE_STORES.has(store)) continue;
     const rows = dump[store];
     if (!Array.isArray(rows) || !rows.length) continue;
     await new Promise((resolve, reject) => {
@@ -77,6 +81,21 @@ const db = {
     create: data => create('notes', data),
     update: (id, data) => update('notes', id, data),
     delete: id => remove('notes', id),
+    // Lightweight list: excludes image binary data to prevent OOM
+    listLight: async (limit, offset) => {
+      await openDB();
+      const all = await promisify(tx('notes', 'readonly').getAll());
+      const filtered = _scope === 'lite' ? all.filter(r => r._scope === 'lite') : all;
+      const sorted = filtered.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+      const slice = sorted.slice(offset || 0, (offset || 0) + (limit || 30));
+      return slice.map(n => ({ ...n, images: undefined, imageCount: (n.images || []).length }));
+    },
+    count: async () => {
+      await openDB();
+      const all = await promisify(tx('notes', 'readonly').getAll());
+      const filtered = _scope === 'lite' ? all.filter(r => r._scope === 'lite') : all;
+      return filtered.length;
+    },
   },
   diary: {
     list: () => list('diary'),
@@ -176,8 +195,10 @@ const db = {
     get: async key => { const s = await get('settings', key); return s ? s.value : null; },
     set: async (key, value) => { await openDB(); await promisify(tx('settings', 'readwrite').put({ id: key, value })); },
   },
-  exportAll,
-  importAll,
+  moonFrames: {
+    get: dateKey => get('moonFrames', dateKey),
+    put: async (dateKey, blob, meta) => { await openDB(); await promisify(tx('moonFrames', 'readwrite').put({ id: dateKey, blob, meta: meta || {}, fetchedAt: new Date().toISOString() })); },
+  },
   stats: async () => {
     const [notes, reminders, checkins, diary, g] = await Promise.all([
       list('notes'), list('reminders'), list('checkins'), list('diary'), db.growth.get()
@@ -197,5 +218,8 @@ const db = {
     };
   },
 };
+
+db.exportAll = exportAll;
+db.importAll = importAll;
 
 export default db;
