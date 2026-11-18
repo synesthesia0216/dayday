@@ -11,7 +11,7 @@ const CATS = {
   ],
 };
 
-let db = null, toast = () => {};
+let db = null, toast = () => {}, onSave = null;
 
 const state = {
   month: null, // 'YYYY-MM'
@@ -196,11 +196,13 @@ async function saveSheet() {
     type: s.mode, amount: sheetFen(), category: s.cat,
     note: $('ledgerNote').value.trim(), date: $('ledgerDate').value || todayStr(),
   };
+  const isNew = !s.entryId;
   if (s.entryId) await db.ledger.update(s.entryId, data);
   else await db.ledger.create(data);
   closeSheet();
   toast(s.entryId ? '已更新' : '已记账 ✓');
   refresh();
+  if (isNew && onSave) onSave();
 }
 
 // ====== 条目操作(编辑/删除) ======
@@ -266,6 +268,7 @@ function bindEvents() {
 function init(deps) {
   db = deps.db;
   toast = deps.toast || toast;
+  onSave = deps.onSave || null;
   state.month = currentMonth();
   bindEvents();
 }

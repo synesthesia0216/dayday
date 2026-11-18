@@ -21,22 +21,23 @@ const MOON_PHASES = [
   { id:'first_q',      e:'🌓', n:'上弦月', mood:'calm' },
 ];
 
+// 等级曲线：几何级数 ×~2.1，与真实观测里程碑挂钩（参考 Astrophy / TA.Starquest 的等级设计）
 const LEVELS = [
   { lv:1, name:'肉眼观测者',   xp:0 },
-  { lv:2, name:'双筒镜手',     xp:50 },
-  { lv:3, name:'光谱采集者',   xp:120 },
-  { lv:4, name:'深空探索者',   xp:250 },
-  { lv:5, name:'星系测绘师',   xp:500 },
-  { lv:6, name:'暗物质猎手',   xp:1000 },
-  { lv:7, name:'织光者',       xp:2000 },
+  { lv:2, name:'寻星学徒',     xp:80 },
+  { lv:3, name:'双筒镜手',     xp:180 },
+  { lv:4, name:'星座绘师',     xp:400 },
+  { lv:5, name:'梅西耶猎手',   xp:800 },
+  { lv:6, name:'深空探索者',   xp:1600 },
+  { lv:7, name:'织光者',       xp:3200 },
 ];
 
 // Hidden reward stories unlocked at each level
 const LEVEL_REWARDS = {
-  2: { title:'双筒镜下的月海', content:'当你第一次将双筒望远镜对准月球，那些曾经只是阴影的斑块突然显现为广阔的玄武岩平原。月海（Mare）并非真正的水域，而是数十亿年前小行星撞击形成的熔岩盆地。伽利略在1610年首次记录下这些地貌时，称之为"斑驳的明暗"。每一处月海都有名字：静海、雨海、风暴洋——它们是大洪水神话在月球表面的回响。观测者啊，从今天起，月亮对你而言不再是一个圆盘，而是一片等待探索的大陆。', source:'星门秘藏 · Lv.2解锁' },
-  3: { title:'光谱中的宇宙密码', content:'每一道星光都携带着它诞生地的信息。将星光通过棱镜分解为七色光谱，天文学家便能读出恒星的温度、成分、甚至年龄。氢的656纳米红线，钠的589纳米双黄线，钙的393纳米紫线——每一条谱线都是宇宙写下的化学密码。19世纪，夫琅禾费在太阳光谱中发现了574条暗线，揭开了天体物理学的序幕。你手中的数据，正是这份传承的延续——每颗恒星都在光谱中坦白它的一生。', source:'星门秘藏 · Lv.3解锁' },
-  4: { title:'深空天体的低语', content:'在肉眼可见的最暗夜空之外，隐藏着数以千计的星云、星团和星系。M31仙女座星系的光走了254万年才抵达你的眼睛——你看到的，是它254万年前的样子。恒星在星云中诞生，又在超新星爆发中归还元素。我们的身体由星尘构成：血液中的铁来自远古超新星，骨骼中的钙诞生于白矮星的熔炉。观测深空，不过是在回望自己的起源。探索者，你已拥有看见这些的眼睛。', source:'星门秘藏 · Lv.4解锁' },
-  5: { title:'星图的秘密几何', content:'古人将恒星连成图案，编织出88个星座。但星座之间的空间并非虚空——它由看不见的暗物质纤维连接，形成宇宙网。就像绘星阁中你收集的每一张星图，它们看似独立，实则通过同一个观测者的生命串联成独特的星轨。托勒密的48星座、中国三垣二十八宿、阿拉伯星表——每一套星图都是一套不同的世界叙事。而你，正在绘制属于自己的那一套。', source:'星门秘藏 · Lv.5解锁' },
+  2: { title:'寻星学徒的第一课', content:'寻星从北极星开始。把北斗七星斗口的两颗星——天枢与天璇——连成一线，向斗口方向延伸约五倍，落点便是勾陈一，北极星。它距北天极不足一度，千年来为夜航者指明方向。《淮南子》有言："斗柄东指，天下皆春。"北斗的勺柄四季轮转，是最古老的钟表，也是最古老的历书。今夜起，天空对你不再陌生：每一颗星都有名字，而你已学会叫出它们。', source:'星门秘藏 · Lv.2解锁' },
+  3: { title:'双筒镜下的月海', content:'当你第一次将双筒望远镜对准月球，那些曾经只是阴影的斑块突然显现为广阔的玄武岩平原。月海（Mare）并非真正的水域，而是数十亿年前小行星撞击形成的熔岩盆地。伽利略在1610年首次记录下这些地貌时，称之为"斑驳的明暗"。每一处月海都有名字：静海、雨海、风暴洋——它们是大洪水神话在月球表面的回响。观测者啊，从今天起，月亮对你而言不再是一个圆盘，而是一片等待探索的大陆。', source:'星门秘藏 · Lv.3解锁' },
+  4: { title:'星图的秘密几何', content:'古人将恒星连成图案，编织出88个星座。但星座之间的空间并非虚空——它由看不见的暗物质纤维连接，形成宇宙网。就像绘星阁中你收集的每一张星图，它们看似独立，实则通过同一个观测者的生命串联成独特的星轨。托勒密的48星座、中国三垣二十八宿、阿拉伯星表——每一套星图都是一套不同的世界叙事。而你，正在绘制属于自己的那一套。', source:'星门秘藏 · Lv.4解锁' },
+  5: { title:'深空天体的低语', content:'在肉眼可见的最暗夜空之外，隐藏着数以千计的星云、星团和星系。M31仙女座星系的光走了254万年才抵达你的眼睛——你看到的，是它254万年前的样子。恒星在星云中诞生，又在超新星爆发中归还元素。我们的身体由星尘构成：血液中的铁来自远古超新星，骨骼中的钙诞生于白矮星的熔炉。观测深空，不过是在回望自己的起源。探索者，你已拥有看见这些的眼睛。', source:'星门秘藏 · Lv.5解锁' },
   6: { title:'暗物质猎人的手记', content:'我们能看到的物质——恒星、行星、星云——只占宇宙总质量的5%。剩下95%是暗物质和暗能量，它们不与光相互作用，却用引力塑造了星系的结构。就像记忆中那些不曾记录却深刻影响人生的瞬间：它们不发光，但牵引着一切。兹威基在1933年发现后发座星系团运动异常，首次预言了暗物质的存在。看不见的，往往是最强大的。猎手，去追踪那些不可见的力量吧。', source:'星门秘藏 · Lv.6解锁' },
   7: { title:'织光者的最终观测', content:'你已走过了从肉眼到暗物质的全部旅程。现在回头望去，每一次打卡记录、每一篇摘录、每一段星轨，都像是宇宙大爆炸后散布的光子——它们各自独立飞行，却共同讲述着一个故事。卡尔·萨根说："我们是由星尘组成的。"但更准确地说，我们是宇宙认识自己的一种方式。你记录的不是数据，而是一个星系中短暂而灿烂的意识火花。织光者，继续观测吧——因为观看本身，就是在编织光。', source:'星门秘藏 · Lv.7解锁' },
 };
@@ -70,6 +71,81 @@ function getUnlockedStories() {
   return rewards.map(lv => ({ id: 'reward_lv' + lv, ...LEVEL_REWARDS[lv] })).filter(Boolean);
 }
 
+// ====== 星尘勋章（成就系统，真实观测行为驱动） ======
+const ACHIEVEMENTS = [
+  { id:'first_moon',  name:'初见月面', desc:'凝视 NASA 实拍月面' },
+  { id:'first_sky',   name:'初识星空', desc:'打开今夜星空' },
+  { id:'first_const', name:'点亮首座', desc:'点亮第一个星座' },
+  { id:'const_10',    name:'星座绘师', desc:'点亮 10 个星座' },
+  { id:'phase_round', name:'月相轮回', desc:'铭刻全部 8 种月相' },
+  { id:'messier_5',   name:'深空初探', desc:'观测 5 个梅西耶天体' },
+  { id:'streak_7',    name:'七日连观', desc:'连续观测 7 天' },
+  { id:'level_5',     name:'猎手之名', desc:'达到 Lv.5 梅西耶猎手' },
+];
+let unlockedAch = [];
+async function refreshAchievements() {
+  const g = await db.growth.get();
+  unlockedAch = g.achievements || [];
+  return unlockedAch;
+}
+async function unlockAchievement(id) {
+  if (unlockedAch.includes(id)) return false;
+  unlockedAch.push(id);
+  await db.growth.setMeta({ achievements: unlockedAch });
+  const def = ACHIEVEMENTS.find(a => a.id === id);
+  if (def) toast('成就解锁 · ' + def.name);
+  renderAchievements();
+  return true;
+}
+function renderAchievements() {
+  const el = $('achievementsGrid');
+  if (!el) return;
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const on = unlockedAch.includes(a.id);
+    return `<div class="ach-badge${on ? ' on' : ''}" title="${esc(a.desc)}"><span class="ach-star">✦</span><span class="ach-name">${esc(a.name)}</span></div>`;
+  }).join('');
+}
+async function xpOnce(key, amount, source) {
+  const today = new Date().toISOString().slice(0, 10);
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem('dayday_xp_once') || '{}'); } catch (e) {}
+  if (store[key] === today) return false;
+  store[key] = today;
+  localStorage.setItem('dayday_xp_once', JSON.stringify(store));
+  await db.growth.addXP(amount, source);
+  return true;
+}
+async function discover(kind, id) {
+  const g = await db.growth.get();
+  const d = g.discoveries || { constellations: [], messier: [], phases: [] };
+  const list = d[kind] || [];
+  if (list.includes(id)) return false;
+  d[kind] = list.concat(id);
+  await db.growth.setMeta({ discoveries: d });
+  return true;
+}
+async function getDiscoveries() {
+  const g = await db.growth.get();
+  return g.discoveries || { constellations: [], messier: [], phases: [] };
+}
+async function checkAchievements() {
+  const d = await getDiscoveries();
+  const li = levelInfo((await db.growth.get()).xp || 0);
+  const checks = [
+    ['phase_round', (d.phases || []).length >= 8],
+    ['const_10', (d.constellations || []).length >= 10],
+    ['messier_5', (d.messier || []).length >= 5],
+    ['streak_7', (state.streak || 0) >= 7],
+    ['level_5', li.lv >= 5],
+  ];
+  for (const [id, ok] of checks) if (ok) await unlockAchievement(id);
+}
+async function afterCheckin() {
+  state.streak = await db.checkins.getStreak();
+  if (state.streak >= 2) await xpOnce('streak_xp', Math.min(state.streak, 7), '连续观测 ' + state.streak + ' 天');
+  await checkAchievements();
+}
+
 // Celestial name pools
 const CELESTIAL_POOLS = {
   epic:          ['英仙','猎户','天狼','大角','参宿','心宿','北落','天船'],
@@ -87,6 +163,7 @@ let token = localStorage.getItem('nox_token') || '';
 let state = {
   panel: 'stargaze', notes: [], diary: [], reminders: [], checkins: [],
   todayCheckin: null, streak: 0, noteType: 'all',
+  skyFsCons: [], skyLitCons: [],
   calYear: 0, calMonth: 0, selectedMoon: null,
   editing: null, sTimer: null,
   storyTab: 'collection', profile: null,
@@ -104,7 +181,7 @@ async function loadModules() {
   moonCalc = (await import('../client/moon-calc.js')).default;
   birthday = (await import('../client/birthday.js')).default;
   ledger = (await import('../client/ledger.js')).default;
-  ledger.init({ db, toast });
+  ledger.init({ db, toast, onSave: () => xpOnce('ledger_xp', 1, '记账') });
   sky = (await import('../client/star-chart.js')).default;
   // Load local mythology
   try {
@@ -712,6 +789,8 @@ function showMoonPicker(ds, currentMoon) {
     if (match) { setTimeout(() => toast('「' + match.title + '」被你的月相吸引而来'), 800); }
     // Add XP
     await db.growth.addXP(5, '铭刻月相');
+    await discover('phases', moodEmoji);
+    await afterCheckin();
     await loadStargazeData(); renderCalendar(); updateStats();
     state.selectedMoon = null;
   };
@@ -943,6 +1022,13 @@ async function loadStargaze() {
 // ====== 真实月面影像（NASA SVS Dial-A-Moon） ======
 // 帧公式本地计算（无需 API）；设备端 CapacitorHttp 原生 fetch 可绕过 CORS 缓存 blob；
 // 浏览器端 <img> 直载不受 CORS 限制（仅显示，不读取像素）。失败静默回退 canvas 渲染。
+async function awardMoonSight() {
+  await refreshAchievements();
+  if (unlockedAch.includes('first_moon')) return;
+  await db.growth.addXP(5, '初见真实月面');
+  await unlockAchievement('first_moon');
+}
+
 async function loadMoonImage() {
   const img = $('moonHeroImg');
   const src = $('moonHeroSrc');
@@ -955,6 +1041,7 @@ async function loadMoonImage() {
       img.classList.add('loaded');
       src.textContent = 'NASA SVS · 每日实拍';
       state.moonImgUrl = url;
+      awardMoonSight();
     };
     img.onerror = () => { img.classList.remove('loaded'); src.textContent = ''; state.moonImgUrl = null; };
     img.src = url;
@@ -1055,19 +1142,26 @@ async function renderSkyFs() {
     lat: loc.lat, lon: loc.lon, date,
     cx: w / 2, cy: h / 2, radius: R, w, h,
     showStarLabels: true,
+    highlight: state.skyLitCons || [],
   });
   state.skyFsStats = r;
+  state.skyFsCons = r.constellations || [];
   $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
   $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
   $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 方位圈中心为天顶`;
 }
 
-function openSkyOverlay() {
+async function openSkyOverlay() {
   const h = pickSkyHour();
   const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
   $('skyFsTime').value = Math.max(0, Math.min(9, v));
   $('skyFsOverlay').classList.add('open');
-  renderSkyFs();
+  const d = await getDiscoveries();
+  state.skyLitCons = d.constellations || [];
+  await renderSkyFs();
+  xpOnce('sky_view', 2, '仰望今夜星空');
+  await refreshAchievements();
+  unlockAchievement('first_sky');
 }
 
 function closeSkyOverlay() { $('skyFsOverlay').classList.remove('open'); }
@@ -1076,6 +1170,28 @@ $('skyCard').addEventListener('click', openSkyOverlay);
 $('skyFsClose').addEventListener('click', closeSkyOverlay);
 $('skyFsOverlay').addEventListener('click', e => { if (e.target === $('skyFsOverlay')) closeSkyOverlay(); });
 $('skyFsTime').addEventListener('input', renderSkyFs);
+$('skyFsCanvas').addEventListener('click', async e => {
+  const cons = state.skyFsCons || [];
+  if (!cons.length) return;
+  const rect = $('skyFsCanvas').getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  let hit = null;
+  for (const c of cons) {
+    if (Math.hypot(c.x - x, c.y - y) <= 24) { hit = c; break; }
+  }
+  if (!hit) return;
+  const isNew = await discover('constellations', hit.zh);
+  if (isNew) {
+    state.skyLitCons.push(hit.zh);
+    await db.growth.addXP(8, '点亮星座 · ' + hit.zh);
+    toast('「' + hit.zh + '」已点亮 · +8 XP');
+    await unlockAchievement('first_const');
+    await checkAchievements();
+    renderSkyFs();
+  } else {
+    toast(hit.zh + ' · 已点亮');
+  }
+});
 
 // ====== 今夜打卡（心情九宫格，选中即打卡） ======
 function renderMoodGrid() {
@@ -1114,6 +1230,8 @@ function renderMoodGrid() {
       if (match) { setTimeout(() => toast('「' + match.title + '」被你的月相吸引而来'), 800); }
       // Add XP
       await db.growth.addXP(5, '铭刻月相');
+      await discover('phases', moodEmoji);
+      await afterCheckin();
       renderMoodGrid();
       await loadStargazeData(); renderCalendar(); updateStats();
     };
@@ -2020,7 +2138,11 @@ async function loadGalaxy() {
   galaxyGrowth = { ...g, level: lv, xp, levelName, nextXp, nextLevelName };
 
   // Level-up rewards: unlock hidden stories (skip in demo)
-  if (!isLite) checkLevelRewards(lv);
+  if (!isLite) {
+    checkLevelRewards(lv);
+    refreshAchievements().then(renderAchievements);
+    checkAchievements();
+  }
 
   initGalaxyView(lv);
   renderGalaxy();
@@ -2374,7 +2496,7 @@ function showGalaxyPopup(objId) {
   const saved = isAstroSaved(objId);
   saveBtn.textContent = saved ? '已收藏' : '收纳入银河档案';
   saveBtn.className = 'galaxy-info-bar-save' + (saved ? ' saved' : '');
-  saveBtn.onclick = () => {
+  saveBtn.onclick = async () => {
     if (isAstroSaved(objId)) {
       unsaveAstroId(objId);
       saveBtn.textContent = '收纳入银河档案';
@@ -2385,6 +2507,7 @@ function showGalaxyPopup(objId) {
       saveBtn.textContent = '已收藏';
       saveBtn.className = 'galaxy-info-bar-save saved';
       toast(obj.name + ' 已收纳入银河档案');
+      await db.growth.addXP(3, '收藏天体故事');
     }
   };
 
@@ -2392,6 +2515,14 @@ function showGalaxyPopup(objId) {
   setExcerptContext(obj.name, '星系图鉴 · ' + obj.en);
 
   $('galaxyInfoBar').style.display = 'flex';
+
+  (async () => {
+    const isNew = await discover('messier', objId);
+    if (isNew) {
+      await db.growth.addXP(5, '观测天体 · ' + obj.name);
+      await checkAchievements();
+    }
+  })();
 }
 
 function hideGalaxyPopup() { $('galaxyInfoBar').style.display = 'none'; }

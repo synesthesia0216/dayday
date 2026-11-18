@@ -42,6 +42,22 @@ async function clear(store) { await openDB(); return promisify(tx(store, 'readwr
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+function growthMutation(mutate) {
+  return new Promise((resolve, reject) => {
+    const t = _db.transaction('growth', 'readwrite');
+    const st = t.objectStore('growth');
+    const req = st.get('singleton');
+    req.onsuccess = () => {
+      const g = req.result || { id: 'singleton', xp: 0, xpHistory: [], createdAt: new Date().toISOString() };
+      mutate(g);
+      st.put(g);
+      t.oncomplete = () => resolve(g);
+    };
+    t.onerror = () => reject(t.error);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 // ====== Backup / Restore（缓存 store 不参与备份，避免 Blob 撑爆备份文件） ======
 async function exportAll() {
   await openDB();
@@ -151,15 +167,19 @@ const db = {
       const g = await get('growth', 'singleton');
       return g || { id: 'singleton', xp: 0, xpHistory: [] };
     },
+    // 读-改-写在同一 readwrite 事务内完成；IndexedDB 对同 store 的 readwrite 事务串行执行，
+    // 防止并发 addXP/setMeta 互相覆盖丢数据（真实月面 +5 与星空 +2 并发时曾互吞）
     addXP: async (amount, source) => {
-      let g = await get('growth', 'singleton');
-      if (!g) {
-        g = await create('growth', { id: 'singleton', xp: 0, xpHistory: [] });
-      }
-      g.xp = (g.xp || 0) + amount;
-      g.xpHistory = g.xpHistory || [];
-      g.xpHistory.push({ amount, source, date: new Date().toISOString() });
-      return update('growth', 'singleton', { xp: g.xp, xpHistory: g.xpHistory });
+      await openDB();
+      return growthMutation(g => {
+        g.xp = (g.xp || 0) + amount;
+        g.xpHistory = g.xpHistory || [];
+        g.xpHistory.push({ amount, source, date: new Date().toISOString() });
+      });
+    },
+    setMeta: async (patch) => {
+      await openDB();
+      return growthMutation(g => Object.assign(g, patch));
     },
   },
   storyCollection: {

@@ -129,6 +129,8 @@ async function render(ctx, opts) {
 
   const lst = (gmstDeg(date) + lon + 360) % 360;
   let starsDrawn = 0, linesDrawn = 0, labelsDrawn = 0;
+  const consDrawn = [];
+  const highlight = opts.highlight || [];
 
   // 0. 整幅底色（矩形画布边角融入夜色）
   if (opts.w && opts.h) {
@@ -253,7 +255,9 @@ async function render(ctx, opts) {
       pts.forEach(p => { sx += p.x; sy += p.y; });
       sx /= pts.size; sy /= pts.size;
       if (Math.hypot(sx - cx, sy - cy) < R * 0.94) {
-        ctx.fillStyle = `rgba(198,210,232,${0.5 * dim})`;
+        consDrawn.push({ zh: c.zh, en: c.en || '', x: sx, y: sy });
+        const lit = highlight.includes(c.zh) || highlight.includes(c.en);
+        ctx.fillStyle = lit ? `rgba(214,180,122,${0.85 * dim})` : `rgba(198,210,232,${0.5 * dim})`;
         ctx.font = `10px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -296,7 +300,7 @@ async function render(ctx, opts) {
     }
   }
 
-  return { starsDrawn, linesDrawn, labelsDrawn };
+  return { starsDrawn, linesDrawn, labelsDrawn, constellations: consDrawn };
 }
 
 export default { ensureCatalog, render, gmstDeg, eqToHoriz, galToEq, altazToXY };
