@@ -2,80 +2,109 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Day-Day</title>
+<link rel="stylesheet" href="fonts/lxgwwenkailite-regular.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 
 <!-- ====== 登录界面 ====== -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">DAY-DAY</div>
-    <div class="login-sub">登录以继续</div>
-    <div class="login-step" id="loginStep1">
-      <input class="login-input" type="email" id="loginEmail" placeholder="Email">
-      <button class="login-btn" id="btnSendCode">发送验证码</button>
-      <div class="login-hint" id="loginHint"></div>
+    <div class="login-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+      <span>Day-Day</span>
     </div>
-    <div class="login-step" id="loginStep2" style="display:none;">
-      <div class="login-email-label" id="loginEmailLabel"></div>
-      <input class="login-input code-input" type="text" id="loginCode" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="off">
-      <button class="login-btn" id="btnVerify">验证</button>
-      <button class="login-back" id="btnBack">← 更换邮箱</button>
-      <div class="login-hint" id="loginHint2"></div>
+    <div class="login-sub" id="loginSubtitle">每颗星辰都是一段神话，每次观测都是一次重逢</div>
+    <div class="login-title" id="loginTitle">叩启星门</div>
+    <div class="login-form" id="loginForm">
+      <div class="pw-wrap">
+        <input class="login-input" type="password" id="loginKey" placeholder="星门密钥">
+        <button class="pw-toggle" id="pwToggle" type="button" tabindex="-1">
+          <svg id="eyeOff" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <svg id="eyeOn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <button class="login-btn" id="btnUnlock">叩启星门</button>
+      <div class="login-hint" id="loginHint"></div>
+      <div class="login-reset" id="resetLink" style="display:none;">重置星门（清除所有数据）</div>
     </div>
   </div>
 </div>
 
-<!-- ====== 主应用（登录后可见） ====== -->
+<!-- ====== 主应用 ====== -->
 <div class="app" id="app" style="display:none;">
 
 <div class="drawer-overlay" id="drawerOverlay"></div>
 
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
-    <div class="logo">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/></svg>
-      <span class="logo-text">DAY-DAY</span>
+    <div class="profile-drawer" id="profileDrawer" onclick="editProfile()">
+      <div class="profile-avatar" id="profileAvatar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <div class="profile-info">
+        <span class="profile-name" id="profileName">观测者</span>
+        <span class="profile-celestial" id="profileCelestial"></span>
+      </div>
     </div>
     <button class="drawer-close" id="drawerToggle">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
   </div>
   <nav class="nav" id="nav">
-    <a class="nav-link active" data-panel="today">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span>今日</span>
+    <a class="nav-link active" data-panel="stargaze">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>
+      <span>观星台</span>
     </a>
-    <a class="nav-link" data-panel="notes">
+    <a class="nav-link" data-panel="starchart">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span>笔记</span>
+      <span>绘星阁</span>
       <span class="badge" id="badgeNotes">0</span>
     </a>
-    <a class="nav-link" data-panel="diary">
+    <a class="nav-link" data-panel="startrail">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span>日记</span>
+      <span>时光星轨</span>
       <span class="badge" id="badgeDiary">0</span>
     </a>
-    <a class="nav-link" data-panel="story">
+    <a class="nav-link" data-panel="myth">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-      <span>故事</span>
+      <span>神话书库</span>
       <span class="badge" id="badgeStory">0</span>
     </a>
-    <a class="nav-link" data-panel="growth">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>印记</span>
+    <a class="nav-link" data-panel="galaxy">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <span>星系图鉴</span>
     </a>
-    <a class="nav-link" data-panel="reminders">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/></svg>
-      <span>待办</span>
+    <a class="nav-link" data-panel="navigate">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><circle cx="12" cy="12" r="2"/></svg>
+      <span>坐标日志</span>
       <span class="badge" id="badgeReminders">0</span>
     </a>
   </nav>
+  <div class="drawer-theme" id="drawerTheme">
+    <button type="button" class="drawer-theme-label" id="drawerThemeLabel">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+      <span>界面风格</span>
+      <svg class="drawer-theme-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="drawer-theme-dots" id="drawerThemeDots">
+      <button type="button" class="theme-dot starry active" data-theme="starry" title="星夜"></button>
+      <button type="button" class="theme-dot moon" data-theme="moon" title="月白"></button>
+      <button type="button" class="theme-dot sky" data-theme="sky" title="浅蓝"></button>
+      <button type="button" class="theme-dot deepblue" data-theme="deepblue" title="深蓝"></button>
+      <button type="button" class="theme-dot gray" data-theme="gray" title="岩灰"></button>
+      <span class="theme-dot custom" data-theme="custom" title="自定义取色">
+        <input type="color" id="customColorInput">
+      </span>
+    </div>
+  </div>
   <div class="drawer-foot">
     <div class="drawer-stats" id="drawerStats"></div>
-    <button class="logout-btn" id="btnLogout">退出</button>
+    <div class="demo-badge" id="demoBadge" style="display:none;">moonlight</div>
+    <button class="logout-btn" id="btnLogout">关闭星图</button>
   </div>
 </aside>
 
@@ -85,73 +114,200 @@
 
 <main class="main" id="main">
 
-  <!-- 今日 -->
-  <section class="panel active" id="panel-today">
-    <div class="today-grid">
-      <div class="today-left">
-        <div class="clock" id="clock">
-          <div class="clock-time" id="clockTime">00:00</div>
-          <div class="clock-meta">
-            <span id="clockDate"></span>
-            <span class="clock-sep">·</span>
-            <span id="clockPhase"></span>
-          </div>
-        </div>
-        <div class="today-streak" id="todayStreak"></div>
-        <div class="weekly-card" id="weeklyCard"></div>
-      </div>
-      <div class="today-right">
-        <div class="calendar" id="calendar"></div>
-        <div class="mood-panel" id="moodPanel" style="display:none;"></div>
+  <!-- 观星台 -->
+  <section class="panel active" id="panel-stargaze">
+    <div class="clock stg-item" id="clock">
+      <div class="clock-time" id="clockTime">00:00</div>
+      <div class="clock-meta">
+        <span id="clockDate"></span>
+        <span class="clock-sep">·</span>
+        <span id="clockPhase"></span>
       </div>
     </div>
+
+    <!-- 月相 Hero -->
+    <div class="moon-hero stg-item" id="moonHero">
+      <div class="moon-hero-halo" id="moonHeroHalo">
+        <canvas class="moon-hero-canvas" id="moonHeroCanvas"></canvas>
+      </div>
+      <div class="moon-hero-name" id="moonHeroName"></div>
+      <div class="moon-hero-en" id="moonHeroEn"></div>
+      <div class="moon-hero-meta" id="moonHeroMeta"></div>
+      <div class="moon-hero-next" id="moonHeroNext"></div>
+    </div>
+
+    <!-- 三列数据卡 -->
+    <div class="hero-stats stg-item" id="heroStats">
+      <div class="hero-stat">
+        <div class="hero-stat-icon">🔥</div>
+        <div class="hero-stat-val" id="heroStatStreak">—</div>
+        <div class="hero-stat-label">连续观测</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">✨</div>
+        <div class="hero-stat-val" id="heroStatLevel">Lv.—</div>
+        <div class="hero-stat-label" id="heroStatLevelName">星阶</div>
+        <div class="hero-xp-track"><div class="hero-xp-fill" id="heroXpFill"></div></div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">📝</div>
+        <div class="hero-stat-val" id="heroStatNotes">—</div>
+        <div class="hero-stat-label">星图笔记</div>
+      </div>
+    </div>
+
+    <!-- 打卡 + 周报 -->
+    <div class="mid-grid">
+      <div class="checkin-card stg-item" id="checkinCard">
+        <div class="card-head">
+          <span class="card-title">今夜打卡</span>
+          <span class="card-sub" id="checkinState">以月相铭刻此刻</span>
+        </div>
+        <div class="mood-grid" id="moodGrid"></div>
+        <div class="birthday-banner" id="birthdayBanner" style="display:none;">
+          <div class="birthday-icon">🎂</div>
+          <div class="birthday-info">
+            <div class="birthday-msg" id="birthdayMsg"></div>
+            <div class="birthday-story" id="birthdayStory"></div>
+          </div>
+        </div>
+      </div>
+      <div class="weekly-card stg-item" id="weeklyCard"></div>
+    </div>
+
+    <!-- 日历（全宽） -->
+    <div class="calendar stg-item" id="calendar"></div>
+
+    <!-- 观测统计 -->
+    <div class="stats-grid stg-item" id="statsGrid">
+      <div class="stat-card stat-heatmap-card">
+        <div class="stat-card-head"><span class="stat-card-title">观测热力图</span><span class="stat-card-sub" id="heatmapRange"></span></div>
+        <div class="heatmap" id="checkinHeatmap"></div>
+        <div class="heatmap-legend">每一格都是你望向夜空的一夜</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-head"><span class="stat-card-title">月相分布</span><span class="stat-card-sub" id="moodDistTotal"></span></div>
+        <div class="mood-dist" id="moodDist"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-head"><span class="stat-card-title">字迹星轨</span><span class="stat-card-sub">近 8 周</span></div>
+        <div class="word-trend" id="wordTrend"></div>
+      </div>
+    </div>
+
+    <button class="share-card-btn stg-item" id="btnShareCard">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      分享今日星图
+    </button>
   </section>
 
-  <!-- 笔记 -->
-  <section class="panel" id="panel-notes">
+  <!-- 绘星阁 -->
+  <section class="panel" id="panel-starchart">
     <div class="topbar">
       <div class="search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchInput" placeholder="搜索">
+        <input type="text" id="searchInput" placeholder="搜索星图">
       </div>
       <div class="chips" id="typeChips"></div>
       <button class="btn" id="btnNewNote">+</button>
     </div>
-    <div class="card-grid" id="notesGrid"></div>
-    <div class="empty" id="notesEmpty">暂无笔记</div>
+    <div class="panel-scroll">
+      <div class="card-grid" id="notesGrid"></div>
+      <button class="load-more-btn" id="notesLoadMore" style="display:none;" onclick="loadNotes()">加载更多星图</button>
+      <div class="empty" id="notesEmpty">夜空静谧，尚无绘制的星图</div>
+    </div>
   </section>
 
-  <!-- 日记 -->
-  <section class="panel" id="panel-diary">
+  <!-- 时光星轨 -->
+  <section class="panel" id="panel-startrail">
     <div class="topbar">
-      <h2>日记</h2>
+      <h2>时光星轨</h2>
       <button class="btn" id="btnNewDiary">+</button>
     </div>
-    <div class="diary-list" id="diaryList"></div>
-    <div class="empty" id="diaryEmpty">暂无日记</div>
-  </section>
-
-  <!-- 故事 -->
-  <section class="panel" id="panel-story">
-    <div class="topbar">
-      <h2 id="storyTitle">故事</h2>
-      <div id="storyDevBtns" style="display:none;"><button class="btn" id="btnNewStory">+</button></div>
+    <div class="panel-scroll">
+      <div class="diary-list" id="diaryList"></div>
+      <div class="empty" id="diaryEmpty">星光尚未落笔，每一次观测都是时间的星轨</div>
     </div>
-    <div class="story-grid" id="storyList"></div>
-    <div class="empty" id="storyEmpty">暂无章节</div>
   </section>
 
-  <!-- 印记 -->
-  <section class="panel" id="panel-growth">
-    <div class="growth-stage" id="growthStage"></div>
-    <div class="growth-detail" id="growthDetail"></div>
+  <!-- 神话书库 -->
+  <section class="panel" id="panel-myth">
+    <div class="myth-head">
+      <div class="topbar">
+        <h2>神话书库</h2>
+        <div class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="storySearchInput" placeholder="探寻神话...">
+        </div>
+        <button class="btn btn-random" id="btnRandomStory" title="召唤星辰故事">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+      </div>
+      <div class="tabs" id="storyTabs">
+        <button class="tab active" data-tab="collection">银河档案</button>
+        <button class="tab" data-tab="explore">星际探索</button>
+      </div>
+    </div>
+    <div class="panel-scroll myth-scroll">
+      <div class="story-collection-grid" id="storyCollectionGrid"></div>
+      <div class="story-search-results" id="storySearchResults" style="display:none;"></div>
+      <div class="empty" id="storyCollectionEmpty">星尘未至<br>记录月相，星辰的故事便会纷至沓来</div>
+      <div class="empty" id="storySearchEmpty" style="display:none;">未寻到星尘</div>
+    </div>
   </section>
 
-  <!-- 待办 -->
-  <section class="panel" id="panel-reminders">
-    <div class="topbar"><h2>待办</h2><button class="btn" id="btnNewReminder">+</button></div>
-    <div class="todo-list" id="remindersList"></div>
-    <div class="empty" id="remindersEmpty">暂无待办</div>
+  <!-- 星系图鉴 -->
+  <section class="panel panel-scroll" id="panel-galaxy">
+    <div class="galaxy-level-bar">
+      <span class="galaxy-level" id="galaxyLevel"></span>
+      <div class="galaxy-xp-wrap">
+        <div class="galaxy-xp-bar"><div class="galaxy-xp-fill" id="galaxyXpFill"></div></div>
+        <span class="galaxy-xp" id="galaxyXp"></span>
+      </div>
+    </div>
+    <div class="galaxy-view" id="galaxyView">
+      <div class="galaxy-space" id="galaxySpace">
+        <div class="galaxy-core" id="galaxyCore"></div>
+        <div class="galaxy-stars-layer" id="galaxyStars"></div>
+        <div class="galaxy-stars-bright" id="galaxyStarsBright"></div>
+        <div class="galaxy-dust-lanes" id="galaxyDustLanes"></div>
+        <div class="galaxy-nebulae" id="galaxyNebulae"></div>
+        <div class="galaxy-markers" id="galaxyMarkers"></div>
+        <div class="galaxy-spiral-arms" id="galaxySpiralArms"></div>
+      </div>
+      <div class="galaxy-zoom-controls">
+        <button class="gz-btn" id="gzIn" title="放大">+</button>
+        <button class="gz-btn" id="gzOut" title="缩小">-</button>
+        <button class="gz-btn" id="gzReset" title="重置">⟲</button>
+        <button class="gz-btn gz-fs" id="gzFullscreen" title="全屏">⛶</button>
+        <button class="gz-btn" id="gzLock" title="跳转到当前等级">◎</button>
+      </div>
+    </div>
+    <div class="galaxy-info-bar" id="galaxyInfoBar" style="display:none;">
+      <div class="galaxy-info-bar-close" id="galaxyInfoBarClose">×</div>
+      <div class="galaxy-info-bar-content">
+        <div class="galaxy-info-bar-title" id="galaxyInfoBarTitle"></div>
+        <div class="galaxy-info-bar-meta">
+          <span id="galaxyInfoBarType"></span>
+          <span class="galaxy-info-bar-sep">·</span>
+          <span id="galaxyInfoBarDist"></span>
+        </div>
+        <div class="galaxy-info-bar-desc" id="galaxyInfoBarDesc"></div>
+      </div>
+      <div class="galaxy-info-bar-actions">
+        <button class="galaxy-info-bar-save" id="galaxyInfoBarSave">收纳入银河档案</button>
+        <button class="galaxy-info-bar-excerpt" id="galaxyInfoBarExcerpt">摘录</button>
+      </div>
+    </div>
+    <div class="growth-metrics" id="growthMetrics"></div>
+    <div class="xp-log-container" id="xpLogContainer"></div>
+  </section>
+
+  <!-- 坐标日志 -->
+  <section class="panel panel-scroll" id="panel-navigate">
+    <div class="topbar"><h2>坐标日志</h2><button class="btn" id="btnNewReminder">+ 设定航向</button></div>
+    <div class="coord-list" id="remindersList"></div>
+    <div class="empty" id="remindersEmpty">尚未设定航向<br>立下一个坐标，点亮前进的方向</div>
   </section>
 </main>
 </div>
@@ -169,9 +325,124 @@
     <div class="modal-body">
       <textarea class="modal-textarea" id="modalContent" placeholder="写点什么..."></textarea>
       <div class="modal-images" id="modalImages"></div>
+      <!-- 绘制面板 -->
+      <div class="draw-wrap" id="drawWrap" style="display:none;">
+        <div class="draw-tools">
+          <div class="brush-types" id="brushTypes">
+            <button class="brush-btn active" data-brush="pen" title="钢笔">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            <button class="brush-btn" data-brush="pencil" title="铅笔">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </button>
+            <button class="brush-btn" data-brush="marker" title="马克笔">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+            </button>
+            <button class="brush-btn" data-brush="spray" title="喷枪">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="1"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><circle cx="8" cy="13" r="1.5"/><circle cx="16" cy="13" r="1.5"/><circle cx="11" cy="16" r="1.5"/><circle cx="13" cy="7" r="1"/><circle cx="7" cy="11" r="1"/><circle cx="17" cy="11" r="1"/></svg>
+            </button>
+            <button class="brush-btn" data-brush="fill" title="填充">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="M5 2l5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg>
+            </button>
+            <button class="brush-btn" data-brush="eraser" title="橡皮">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14 2.2c.8-.8 2-.8 2.8 0L20 5.5"/><path d="M6 17l3 3"/></svg>
+            </button>
+          </div>
+          <div class="draw-sep"></div>
+          <div class="draw-color-wrap">
+            <canvas class="draw-color-wheel" id="drawColorWheel" width="32" height="32"></canvas>
+          </div>
+          <div class="draw-slider-group">
+            <label class="draw-label">大小</label>
+            <input type="range" id="drawSize" min="1" max="30" value="3" class="draw-slider">
+            <span class="draw-val" id="drawSizeVal">3</span>
+          </div>
+          <div class="draw-slider-group">
+            <label class="draw-label">透明</label>
+            <input type="range" id="drawOpacity" min="10" max="100" value="100" class="draw-slider">
+            <span class="draw-val" id="drawOpacityVal">100</span>
+          </div>
+          <div class="draw-sep"></div>
+          <button class="draw-tool-btn" id="drawUndo" title="撤回">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          </button>
+          <button class="draw-tool-btn" id="drawClear" title="清空">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+          <button class="draw-tool-btn" id="drawFullscreen" title="全屏绘制">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
+        </div>
+        <div class="layer-list" id="layerList"></div>
+      <canvas class="draw-canvas" id="drawCanvas"></canvas>
+        <div class="draw-foot">
+          <button class="draw-save-btn" id="drawSaveToDiary">保存到星轨</button>
+          <button class="draw-save-btn draw-dl-btn" id="drawDownloadBtn">下载</button>
+        </div>
+      </div>
       <input type="file" id="modalFileInput" accept="image/*" style="display:none;" multiple>
     </div>
     <div class="modal-foot" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- 月相选择弹窗 -->
+<div class="overlay" id="moonOverlay">
+  <div class="moon-modal" id="moonModal"></div>
+</div>
+
+<!-- 全屏绘制 -->
+<div class="draw-fs-overlay" id="drawFsOverlay">
+  <div class="draw-fs-tools" id="drawFsTools"></div>
+  <div class="draw-fs-canvas-wrap">
+    <canvas class="draw-fs-canvas" id="drawFsCanvas"></canvas>
+  </div>
+</div>
+
+<!-- 星系全屏 -->
+<div class="galaxy-fs-overlay" id="galaxyFsOverlay">
+  <div class="galaxy-fs-topbar">
+    <span class="galaxy-fs-title">星系图鉴</span>
+    <div class="galaxy-fs-zoom-controls">
+      <button class="gz-btn" id="gzFsIn">+</button>
+      <button class="gz-btn" id="gzFsOut">-</button>
+      <button class="gz-btn" id="gzFsReset">⟲</button>
+    </div>
+    <button class="galaxy-fs-close" id="galaxyFsClose">×</button>
+  </div>
+  <div class="galaxy-fs-view" id="galaxyFsView">
+    <div class="galaxy-fs-space" id="galaxyFsSpace">
+      <div class="galaxy-fs-core"></div>
+      <div class="galaxy-fs-stars" id="galaxyFsStars"></div>
+      <div class="galaxy-fs-stars-bright" id="galaxyFsStarsBright"></div>
+      <div class="galaxy-fs-dust"></div>
+      <div class="galaxy-fs-nebulae" id="galaxyFsNebulae"></div>
+      <div class="galaxy-fs-markers" id="galaxyFsMarkers"></div>
+      <div class="galaxy-fs-arms"></div>
+    </div>
+    <div class="galaxy-info-popup" id="galaxyFsPopup" style="display:none;">
+      <div class="galaxy-popup-close" id="galaxyFsPopupClose">×</div>
+      <div class="galaxy-popup-title" id="galaxyFsPopupTitle"></div>
+      <div class="galaxy-popup-type" id="galaxyFsPopupType"></div>
+      <div class="galaxy-popup-dist" id="galaxyFsPopupDist"></div>
+      <div class="galaxy-popup-desc" id="galaxyFsPopupDesc"></div>
+      <button class="galaxy-popup-save" id="galaxyFsPopupSave">收纳入银河档案</button>
+      <button class="galaxy-popup-excerpt" id="galaxyFsPopupExcerpt">摘录</button>
+    </div>
+  </div>
+</div>
+
+<!-- 已收藏天体 -->
+<div class="overlay" id="savedObjectsOverlay">
+  <div class="saved-objects-modal" id="savedObjectsModal">
+    <div class="modal-head">
+      <span class="modal-title-text">已收藏天体</span>
+      <button class="modal-close" id="savedObjectsClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body saved-objects-body" id="savedObjectsBody"></div>
+    <div class="empty" id="savedObjectsEmpty" style="padding:32px 0;">尚未收藏任何天体<br>在星系图鉴中点击天体即可收藏</div>
   </div>
 </div>
 
@@ -182,11 +453,131 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="story-body" id="storyBody"></div>
+    <div class="story-foot" id="storyFoot"></div>
+  </div>
+</div>
+
+<!-- 档案编辑弹窗 -->
+<div class="overlay" id="profileOverlay">
+  <div class="modal" id="profileModal">
+    <div class="modal-head">
+      <span class="modal-title-text">观测者档案</span>
+      <button class="modal-close" id="profileClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px;">
+      <div class="profile-avatar-edit" id="profileAvatarEdit" onclick="$('profileFileInput').click()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <input type="file" id="profileFileInput" accept="image/*" style="display:none;">
+      <input class="login-input" type="text" id="profileDisplayName" placeholder="观测者之名" style="text-align:center;">
+      <!-- 生日字段 -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
+        <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">星辰降临之日</label>
+        <div style="display:flex;gap:8px;">
+          <input class="login-input" type="date" id="profileBirthDate" style="flex:1;text-align:center;">
+          <select id="profileCalendarType" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-size:13px;border-radius:var(--r);font-family:inherit;font-weight:300;cursor:pointer;">
+            <option value="solar">阳历</option>
+            <option value="lunar">阴历</option>
+          </select>
+        </div>
+        <div class="birthday-lunar-preview" id="birthdayLunarPreview" style="display:none;font-size:11px;color:var(--gold-dim);text-align:center;"></div>
+      </div>
+      <button class="login-btn" id="btnSaveProfile" style="width:auto;padding:8px 32px;">保存星轨档案</button>
+      <!-- 数据备份 -->
+      <div style="width:100%;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
+        <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">星河备份</label>
+        <div style="display:flex;gap:8px;">
+          <button class="login-btn" id="btnBackupData" style="flex:1;padding:8px 10px;font-size:13px;">备份数据</button>
+          <button class="login-btn" id="btnRestoreData" style="flex:1;padding:8px 10px;font-size:13px;">恢复数据</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">备份保存在手机「下载」目录，卸载应用也不会丢失；每 3 天自动备份一次</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 新手引导：设置名字和头像 ====== -->
+<div class="overlay" id="onboardOverlay">
+  <div class="modal" id="onboardModal" style="width:340px;max-width:90vw;text-align:center;">
+    <div class="modal-head" style="justify-content:center;">
+      <span class="modal-title-text">欢迎来到 Day-Day</span>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:28px 24px;">
+      <div class="profile-avatar-edit" id="onboardAvatar" onclick="$('onboardFileInput').click()" style="width:72px;height:72px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+      </div>
+      <input type="file" id="onboardFileInput" accept="image/*" style="display:none;">
+      <input class="login-input" type="text" id="onboardName" placeholder="你的观测者之名" style="text-align:center;font-size:16px;" maxlength="20">
+      <div style="font-size:11px;color:var(--text3);line-height:1.6;max-width:260px;">
+        以星辰为伴，记录每一次观测<br>你的星河，由你命名
+      </div>
+      <button class="login-btn" id="btnOnboardDone" style="width:auto;padding:10px 40px;margin-top:4px;">开始观测</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 导航引导提示 ====== -->
+<div class="tour-overlay" id="tourOverlay" style="display:none;">
+  <div class="tour-mask"></div>
+  <div class="tour-tip" id="tourTip">
+    <div class="tour-tip-icon" id="tourTipIcon"></div>
+    <div class="tour-tip-title" id="tourTipTitle"></div>
+    <div class="tour-tip-desc" id="tourTipDesc"></div>
+    <div class="tour-tip-nav">
+      <span class="tour-dots" id="tourDots"></span>
+      <button class="tour-btn" id="tourNext">下一步</button>
+      <button class="tour-btn tour-btn-skip" id="tourSkip">跳过</button>
+    </div>
   </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
+<div class="excerpt-float" id="excerptFloat" style="display:none;">
+  <button class="excerpt-float-btn" id="excerptFloatBtn">摘录</button>
+</div>
+
+<!-- 取色圆盘 -->
+<div class="colorwheel-overlay" id="colorwheelOverlay">
+  <div class="colorwheel-modal">
+    <div class="colorwheel-title" id="colorwheelTitle">取色圆盘</div>
+    <div class="colorwheel-body">
+      <canvas class="colorwheel-canvas" id="colorwheelCanvas" width="260" height="260"></canvas>
+      <div class="colorwheel-crosshair" id="colorwheelCrosshair"></div>
+    </div>
+    <div class="colorwheel-bar-wrap">
+      <span class="colorwheel-bar-label">亮度</span>
+      <input type="range" class="colorwheel-bar" id="colorwheelBar" min="0" max="100" value="50">
+    </div>
+    <div class="colorwheel-preview" id="colorwheelPreview"></div>
+    <div class="colorwheel-actions">
+      <button class="colorwheel-btn colorwheel-cancel" id="colorwheelCancel">取消</button>
+      <button class="colorwheel-btn colorwheel-apply" id="colorwheelApply">应用</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分享卡片预览 -->
+<div class="overlay" id="shareCardOverlay">
+  <div class="share-card-modal">
+    <div class="modal-head">
+      <span class="modal-title-text">今日星图</span>
+      <button class="modal-close" id="shareCardClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="share-card-body"><img id="shareCardImg" alt="今日星图"></div>
+    <div class="share-card-foot">
+      <button class="share-card-save" id="btnSaveShareCard">保存 / 分享</button>
+    </div>
+  </div>
+</div>
+
+<script src="capacitor.js"></script>
+<script src="vendor/filesystem.js"></script>
+<script src="vendor/local-notifications.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

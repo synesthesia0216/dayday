@@ -1,0 +1,9 @@
+{
+  "appId": "com.dayday.app",
+  "appName": "Day-Day",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
