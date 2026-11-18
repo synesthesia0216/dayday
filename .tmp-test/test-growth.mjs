@@ -74,13 +74,16 @@ await assert('已有勋章点亮(≥1)', `document.querySelectorAll('.ach-badge.
 await shot('growth-badges.png');
 
 // 2. 星空弹层：每日首次 +2 XP + 初识星空成就
+// 跨测试残留：test-ledger 会整库清空但 localStorage 上限键残留 → 清键并取基线，断言相对基线 +1
+await ev(`localStorage.removeItem('dayday_xp_once')`);
+const SKY_BASE = await ev(`(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length; }))`);
 await ev(`goPanel('stargaze')`);
 await sleep(1200);
 await ev(`document.getElementById('skyCard').click()`);
 await sleep(2000);
 await assert('弹层打开', `document.getElementById('skyFsOverlay').classList.contains('open')`);
 await assert('星座标签点位已计算(>10)', `window.state && state.skyFsCons && state.skyFsCons.length > 10`, 12000);
-await assert('今日仰望星空 +2 XP 仅一次', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === 1; }))`);
+await assert('今日仰望星空 +2 XP 仅一次', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === ${SKY_BASE} + 1; }))`);
 await assert('初识星空成就解锁', `(${G}.then(async g => (await g.get()).achievements?.includes('first_sky') ?? false))`);
 
 // 3. 点击星座标签 → 点亮 +8 XP + 成就
@@ -106,7 +109,7 @@ await ev(`document.getElementById('skyFsClose').click()`);
 await sleep(500);
 await ev(`document.getElementById('skyCard').click()`);
 await sleep(1800);
-await assert('重开弹层不重复计分(每日一次)', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === 1; }))`);
+await assert('重开弹层不重复计分(每日一次)', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === ${SKY_BASE} + 1; }))`);
 await shot('growth-sky-lit.png');
 await ev(`document.getElementById('skyFsClose').click()`);
 await sleep(400);

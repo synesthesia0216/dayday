@@ -252,7 +252,7 @@ async function showApp() {
   // Check if onboarding needed
   const onboardDone = await db.settings.get('onboard_done');
   if (!onboardDone) showOnboard();
-  // 自动备份（每 3 天，空库跳过）
+  // 自动备份（每日首次启动，空库跳过）
   setTimeout(() => autoBackup(), 2500);
 }
 
@@ -542,19 +542,36 @@ $('btnSaveProfile').addEventListener('click', async () => {
   toast('星轨档案已更新');
 });
 
-$('btnLocate').addEventListener('click', () => {
-  if (!navigator.geolocation) { toast('当前设备不支持定位'); return; }
+$('btnLocate').addEventListener('click', async () => {
   toast('正在获取位置…');
+  // 1) 原生 Capacitor Geolocation（Android 13+ 由插件弹运行时权限）
+  const geo = window.capacitorGeolocation?.Geolocation;
+  if (geo && window.Capacitor?.isNativePlatform?.()) {
+    try {
+      let perm = await geo.checkPermissions();
+      if (perm.location === 'prompt' || perm.location === 'prompt-with-rationale') {
+        perm = await geo.requestPermissions();
+      }
+      if (perm.location !== 'granted') { toast('定位权限未开启，可手动填写坐标'); return; }
+      const pos = await geo.getCurrentPosition({ enableHighAccuracy: false, timeout: 8000 });
+      fillLatLon(pos.coords.latitude, pos.coords.longitude);
+      return;
+    } catch (e) { console.warn('native locate failed:', e); }
+  }
+  // 2) 浏览器降级 navigator.geolocation
+  if (!navigator.geolocation) { toast('当前设备不支持定位'); return; }
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      $('profileLat').value = pos.coords.latitude.toFixed(4);
-      $('profileLon').value = pos.coords.longitude.toFixed(4);
-      toast('已获取坐标，可补充城市名');
-    },
+    pos => fillLatLon(pos.coords.latitude, pos.coords.longitude),
     () => toast('定位失败，可手动填写坐标'),
     { timeout: 8000 }
   );
 });
+
+function fillLatLon(lat, lon) {
+  $('profileLat').value = lat.toFixed(4);
+  $('profileLon').value = lon.toFixed(4);
+  toast('已获取坐标，可补充城市名');
+}
 
 $('profileFileInput').addEventListener('change', () => {
   const file = $('profileFileInput').files[0];
@@ -4290,8 +4307,9 @@ function hslStr(h, s, l) { return `hsl(${h},${s}%,${l}%)`; }
 
 // ====== 数据备份 / 恢复 ======
 const BACKUP_LATEST = 'dayday-backup-latest.json';
-const BACKUP_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000;
-const LS_BACKUP_KEYS = ['nox_token','dayday_prev_level','dayday_unlocked_rewards','dayday_excerpt_hint','dayday_astro_saved','dayday_theme','dayday_custom_color'];
+// 每日首次启动自动备份（XP/成就等成长数据也一并保护）
+const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const LS_BACKUP_KEYS = ['nox_token','dayday_prev_level','dayday_unlocked_rewards','dayday_excerpt_hint','dayday_astro_saved','dayday_theme','dayday_custom_color','dayday_xp_once'];
 
 function utf8ToB64(s) { return btoa(unescape(encodeURIComponent(s))); }
 function b64ToUtf8(b) { return decodeURIComponent(escape(atob(b))); }
@@ -4418,7 +4436,34 @@ async function restoreData() {
   }
 }
 
+// 打包 zip → 系统分享面板（微信/邮件/网盘），浏览器环境回退为直接下载
+async function shareBackup() {
+  const fs = window.capacitorFilesystem;
+  if (!(window.Capacitor?.isNativePlatform?.()) || !fs?.Filesystem) {
+    toast('分享需在手机上使用，已改为直接下载');
+    await backupData(false);
+    return;
+  }
+  toast('正在打包备份…');
+  try {
+    const b64 = utf8ToB64(await buildBackupJson());
+    const zip = new JSZip();
+    zip.file('dayday-backup.json', b64, { base64: true });
+    const zipB64 = await zip.generateAsync({ type: 'base64', compression: 'DEFLATE' });
+    const fileName = 'dayday-backup-' + new Date().toISOString().slice(0, 10) + '.zip';
+    await fs.Filesystem.writeFile({ path: fileName, data: zipB64, directory: fs.Directory.Cache, recursive: true });
+    const uri = await fs.Filesystem.getUri({ path: fileName, directory: fs.Directory.Cache });
+    const share = window.capacitorShare?.Share;
+    if (!share) { toast('分享组件未就绪'); return; }
+    await share.share({ title: 'Day-Day 星河备份', url: uri.uri, dialogTitle: '分享星河备份' });
+  } catch (e) {
+    console.error('Share backup failed:', e);
+    toast('分享失败，请改用「导出备份」');
+  }
+}
+
 $('btnBackupData').addEventListener('click', () => backupData(false));
+$('btnShareBackup').addEventListener('click', shareBackup);
 $('btnRestoreData').addEventListener('click', restoreData);
 
 // ====== Init ======
