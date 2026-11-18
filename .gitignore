@@ -1,5 +1,5 @@
 node_modules/
-data/
+/data/
 uploads/
 config.json
 *.zip
