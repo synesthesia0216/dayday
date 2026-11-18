@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday, ledger;
+let db, auth, moonCalc, birthday, ledger, sky;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -91,9 +91,11 @@ let state = {
   editing: null, sTimer: null,
   storyTab: 'collection', profile: null,
   moonData: null, birthdayInfo: null,
+  obs: null, skyTimer: null,
   excerptContext: null,
   notesPage: 0, notesHasMore: true, notesTotal: 0, PAGE_SIZE: 30,
 };
+window.state = state; // 供测试/调试断言
 
 // ====== Module bootstrap ======
 async function loadModules() {
@@ -103,6 +105,7 @@ async function loadModules() {
   birthday = (await import('../client/birthday.js')).default;
   ledger = (await import('../client/ledger.js')).default;
   ledger.init({ db, toast });
+  sky = (await import('../client/star-chart.js')).default;
   // Load local mythology
   try {
     const r = await fetch('data/mythology.json');
@@ -397,6 +400,12 @@ window.editProfile = function() {
   $('profileBirthDate').value = bd;
   $('profileCalendarType').value = state.profile.calendarType || 'solar';
   updateLunarPreview();
+  // Observation location
+  getObsLocation().then(loc => {
+    $('profileCity').value = loc.city || '';
+    $('profileLat').value = loc.lat;
+    $('profileLon').value = loc.lon;
+  });
   $('profileOverlay').classList.add('open');
 };
 
@@ -442,9 +451,32 @@ $('btnSaveProfile').addEventListener('click', async () => {
     calendarType: calendarType || 'solar',
   });
   state.profile = await db.profile.get();
+  // Observation location
+  const lat = parseFloat($('profileLat').value);
+  const lon = parseFloat($('profileLon').value);
+  const city = $('profileCity').value.trim();
+  if (isFinite(lat) && Math.abs(lat) <= 90) await db.settings.set('obs_lat', String(lat));
+  if (isFinite(lon) && Math.abs(lon) <= 180) await db.settings.set('obs_lon', String(lon));
+  if (city) await db.settings.set('obs_city', city);
+  state.obs = null; // 让下次读取重新加载
+  renderSkyCard();
   renderProfile();
   $('profileOverlay').classList.remove('open');
   toast('星轨档案已更新');
+});
+
+$('btnLocate').addEventListener('click', () => {
+  if (!navigator.geolocation) { toast('当前设备不支持定位'); return; }
+  toast('正在获取位置…');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      $('profileLat').value = pos.coords.latitude.toFixed(4);
+      $('profileLon').value = pos.coords.longitude.toFixed(4);
+      toast('已获取坐标，可补充城市名');
+    },
+    () => toast('定位失败，可手动填写坐标'),
+    { timeout: 8000 }
+  );
 });
 
 $('profileFileInput').addEventListener('change', () => {
@@ -845,6 +877,14 @@ async function loadStargaze() {
   await loadStargazeData();
   renderCalendar();
   renderMoodGrid();
+  // 今夜星空卡（仅可见时刷新，防后台耗电）
+  await renderSkyCard();
+  if (!state.skyTimer) {
+    state.skyTimer = setInterval(() => {
+      const active = $('panel-stargaze').classList.contains('active') && document.visibilityState === 'visible';
+      if (active) renderSkyCard();
+    }, 60000);
+  }
   // Moon hero
   if (state.moonData) {
     const m = state.moonData;
@@ -888,6 +928,97 @@ async function loadStargaze() {
     });
   }
 }
+
+// ====== 今夜星空（真实星图） ======
+const OBS_DEFAULT = { lat: 39.9042, lon: 116.4074, city: '北京' };
+
+async function getObsLocation() {
+  if (state.obs) return state.obs;
+  let loc = { ...OBS_DEFAULT };
+  if (db) {
+    const lat = parseFloat(await db.settings.get('obs_lat'));
+    const lon = parseFloat(await db.settings.get('obs_lon'));
+    const city = await db.settings.get('obs_city');
+    if (isFinite(lat) && Math.abs(lat) <= 90) loc.lat = lat;
+    if (isFinite(lon) && Math.abs(lon) <= 180) loc.lon = lon;
+    if (city) loc.city = city;
+  }
+  state.obs = loc;
+  return loc;
+}
+
+function pickSkyHour() {
+  const h = new Date().getHours();
+  if (h >= 20 || h < 6) return h; // 夜里用当前时刻
+  return 21; // 白天默认展示今晚 21 点
+}
+
+function skyDateAt(hour) {
+  const d = new Date();
+  d.setHours(hour, 0, 0, 0);
+  return d;
+}
+
+async function renderSkyCard() {
+  if (!sky || !state.obs && !(await getObsLocation())) return;
+  const cv = $('skyCardCanvas');
+  const w = cv.clientWidth || 340, h = 190;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const date = skyDateAt(pickSkyHour());
+  const R = Math.min(w / 2 - 16, h / 2 - 12);
+  try {
+    state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h });
+    const hh = String(date.getHours()).padStart(2, '0');
+    $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00 · 星等≤4.5`;
+  } catch (e) {
+    $('skyCardSub').textContent = '星图数据未就绪';
+    // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
+    setTimeout(() => { if ($('panel-stargaze').classList.contains('active')) renderSkyCard(); }, 1500);
+  }
+}
+
+function skyFsHour() { return (20 + parseInt($('skyFsTime').value)) % 24; }
+
+async function renderSkyFs() {
+  if (!sky) return;
+  const cv = $('skyFsCanvas');
+  const wrap = $('skyFsOverlay').querySelector('.sky-fs-body');
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const R = Math.min(w / 2 - 20, h / 2 - 16);
+  const date = skyDateAt(skyFsHour());
+  const loc = await getObsLocation();
+  const r = await sky.render(ctx, {
+    lat: loc.lat, lon: loc.lon, date,
+    cx: w / 2, cy: h / 2, radius: R, w, h,
+    showStarLabels: true,
+  });
+  state.skyFsStats = r;
+  $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
+  $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
+  $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 方位圈中心为天顶`;
+}
+
+function openSkyOverlay() {
+  const h = pickSkyHour();
+  const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
+  $('skyFsTime').value = Math.max(0, Math.min(9, v));
+  $('skyFsOverlay').classList.add('open');
+  renderSkyFs();
+}
+
+function closeSkyOverlay() { $('skyFsOverlay').classList.remove('open'); }
+
+$('skyCard').addEventListener('click', openSkyOverlay);
+$('skyFsClose').addEventListener('click', closeSkyOverlay);
+$('skyFsOverlay').addEventListener('click', e => { if (e.target === $('skyFsOverlay')) closeSkyOverlay(); });
+$('skyFsTime').addEventListener('input', renderSkyFs);
 
 // ====== 今夜打卡（心情九宫格，选中即打卡） ======
 function renderMoodGrid() {
@@ -1090,7 +1221,7 @@ function renderMoonPhase(canvas, moonData, sizePx) {
 // ====== 分享卡片（今日星图） ======
 const SHARE_CARD_W = 440, SHARE_CARD_H = 660;
 
-function generateShareCard() {
+async function generateShareCard() {
   const scale = 2;
   const canvas = document.createElement('canvas');
   canvas.width = SHARE_CARD_W * scale;
@@ -1100,7 +1231,6 @@ function generateShareCard() {
   const W = SHARE_CARD_W, H = SHARE_CARD_H;
 
   const today = new Date().toISOString().slice(0, 10);
-  const rand = mulberry32(hash32(today + '-share'));
   const FONT = '"LXGW WenKai Lite","Noto Serif SC",serif';
 
   // 背景：深邃夜空渐变
@@ -1111,31 +1241,16 @@ function generateShareCard() {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // 星尘（确定性种子：同一天生成同一片星空）
-  for (let i = 0; i < 150; i++) {
-    const x = rand() * W, y = rand() * H * 0.9;
-    const r = 0.4 + rand() * 1.1;
-    const a = 0.15 + rand() * 0.65;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${215 + Math.floor(rand() * 40)},${212 + Math.floor(rand() * 32)},${238},${a})`;
-    ctx.fill();
-  }
-  // 亮星十字光
-  for (let i = 0; i < 6; i++) {
-    const x = rand() * W, y = rand() * H * 0.7;
-    const r = 1.2 + rand() * 1.4;
-    const a = 0.45 + rand() * 0.4;
-    ctx.strokeStyle = `rgba(232,228,246,${a})`;
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.moveTo(x - r * 4, y); ctx.lineTo(x + r * 4, y);
-    ctx.moveTo(x, y - r * 4); ctx.lineTo(x, y + r * 4);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(240,238,250,${a})`;
-    ctx.fill();
+  // 真实星空（观测位置 · 今日此时）——替换随机星点
+  if (sky) {
+    try {
+      const loc = await getObsLocation();
+      await sky.render(ctx, {
+        lat: loc.lat, lon: loc.lon, date: skyDateAt(pickSkyHour()),
+        cx: W / 2, cy: 200, radius: 178, w: W, h: H,
+        showLabels: false, dim: 0.42,
+      });
+    } catch (e) { /* 星图未就绪则保持纯夜色背景 */ }
   }
 
   // 顶部：应用名 + 日期
@@ -1147,6 +1262,11 @@ function generateShareCard() {
   ctx.font = `12px ${FONT}`;
   const dateStr = `${today.slice(0, 4)} 年 ${parseInt(today.slice(5, 7))} 月 ${parseInt(today.slice(8, 10))} 日`;
   ctx.fillText(dateStr, W / 2, 64);
+  if (state.obs) {
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    ctx.font = `10px ${FONT}`;
+    ctx.fillText(`${state.obs.city} · 真实星空 · ${String(skyDateAt(pickSkyHour()).getHours()).padStart(2, '0')}:00`, W / 2, 82);
+  }
 
   const m = state.moonData;
   const moonSize = 260, moonY = 98;
@@ -1217,7 +1337,7 @@ $('btnShareCard').addEventListener('click', async () => {
   const today = new Date().toISOString().slice(0, 10);
   const diaries = await db.diary.list();
   state.diaryToday = diaries.find(d => d.date === today) || null;
-  const canvas = generateShareCard();
+  const canvas = await generateShareCard();
   state.shareCardCanvas = canvas;
   $('shareCardImg').src = canvas.toDataURL('image/png');
   $('shareCardOverlay').classList.add('open');
