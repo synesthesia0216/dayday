@@ -76,13 +76,12 @@ console.log('records:', await evalJs(`(() => {
   const wk = document.getElementById('weeklyCard');
   const cal = document.getElementById('calendar');
   const sg = document.getElementById('statsGrid');
-  const heat = document.getElementById('checkinHeatmap');
   return JSON.stringify({
     active: p.classList.contains('active'),
     scClientH: sc.clientHeight, scScrollH: sc.scrollHeight,
     weeklyRows: wk ? wk.querySelectorAll('.w-row').length : -1,
     calCells: cal ? cal.querySelectorAll('.calendar-cell').length : -1,
-    heatCells: heat ? heat.querySelectorAll('.heatmap-cell').length : -1,
+    statCards: sg ? sg.children.length : -1,
     moodDistBars: document.getElementById('moodDist') ? document.getElementById('moodDist').children.length : -1,
     wordCols: document.getElementById('wordTrend') ? document.getElementById('wordTrend').querySelectorAll('.word-trend-col').length : -1,
     shareBtn: !!document.getElementById('btnShareCard')

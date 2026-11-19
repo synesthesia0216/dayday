@@ -1706,7 +1706,7 @@ button{cursor:pointer;font-family:inherit}
 .tour-tip-title{font-size:16px;color:var(--text);font-weight:300;letter-spacing:0.06em;margin-bottom:6px;}
 .tour-tip-desc{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;}
 .tour-tip-nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
-.tour-dots{display:flex;gap:4px;position:absolute;left:28px;}
+.tour-dots{display:flex;gap:4px;margin:0 4px;}
 .tour-dots span{width:5px;height:5px;border-radius:50%;background:var(--border);transition:var(--ease);}
 .tour-dots span.active{background:var(--gold-dim);width:12px;border-radius:3px;}
 .tour-btn{
@@ -1848,54 +1848,6 @@ button{cursor:pointer;font-family:inherit}
   color:var(--text3);
   letter-spacing:0.04em;
 }
-/* 热力图 */
-.heatmap-months{
-  display:grid;
-  grid-template-columns:22px repeat(20,1fr);
-  gap:3px;
-  margin-bottom:4px;
-}
-.heatmap-month{
-  font-size:8px;
-  color:var(--text3);
-  text-align:center;
-}
-.heatmap-grid{
-  display:grid;
-  grid-template-columns:22px repeat(20,1fr);
-  gap:3px;
-}
-.heatmap-dow{
-  font-size:8px;
-  color:var(--text3);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.heatmap-cell{
-  aspect-ratio:1;
-  background:var(--theme-dot, #1a1c22);
-  border-radius:2px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:9px;
-  transition:transform .15s;
-}
-.heatmap-cell.on{
-  background:rgba(201,169,110,0.16);
-  border:1px solid rgba(201,169,110,0.28);
-}
-.heatmap-cell.on:hover{ transform:scale(1.35); z-index:2; }
-.heatmap-cell.today{ outline:1px solid var(--gold); }
-.heatmap-cell.future{ opacity:0.35; }
-.heatmap-legend{
-  margin-top:10px;
-  font-size:9px;
-  color:var(--text3);
-  letter-spacing:0.06em;
-  text-align:right;
-}
 /* 月相分布 */
 .mood-dist{ display:flex; flex-direction:column; gap:9px; }
 .mood-dist-row{
@@ -1975,7 +1927,6 @@ button{cursor:pointer;font-family:inherit}
 .word-trend-sum-n{ color:var(--gold); font-size:11px; }
 @media (max-width:900px){
   .stats-grid{ grid-template-columns:1fr; }
-  .heatmap-cell{ font-size:8px; }
 }
 
 /* ====== 视觉升级：玻璃拟态 + 动效（渐进增强，不支持 color-mix 时自动回退原样式） ====== */

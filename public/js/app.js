@@ -1005,62 +1005,10 @@ async function loadStargazeData() {
   renderStats(allNotes, allDiary);
 }
 
-// ====== 观测统计（热力图 / 月相分布 / 字迹星轨） ======
+// ====== 观测统计（月相分布 / 字迹星轨） ======
 function renderStats(allNotes, allDiary) {
-  renderHeatmap();
   renderMoodDist();
   renderWordTrend(allNotes, allDiary);
-}
-
-function renderHeatmap() {
-  const map = {};
-  state.checkins.forEach(c => { map[c.date] = c.mood; });
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const WEEKS = 20;
-  // 从本周一开始，往前 20 周
-  const start = new Date(today);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - (WEEKS - 1) * 7);
-
-  const weeks = [];
-  for (let w = 0; w < WEEKS; w++) {
-    const col = [];
-    for (let d = 0; d < 7; d++) {
-      const dt = new Date(start);
-      dt.setDate(start.getDate() + w * 7 + d);
-      col.push(dt);
-    }
-    weeks.push(col);
-  }
-
-  // 月份标签：某周内出现 1 号则标在该列
-  let monthHtml = '<span></span>';
-  weeks.forEach(col => {
-    const first = col.find(dt => dt.getDate() === 1);
-    monthHtml += `<span class="heatmap-month">${first ? (first.getMonth() + 1) + '月' : ''}</span>`;
-  });
-
-  const weekNames = ['一', '二', '三', '四', '五', '六', '日'];
-  let cellsHtml = '';
-  for (let d = 0; d < 7; d++) {
-    cellsHtml += `<span class="heatmap-dow">${weekNames[d]}</span>`;
-    for (let w = 0; w < WEEKS; w++) {
-      const dt = weeks[w][d];
-      const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-      const mood = map[ds];
-      const isToday = dt.getTime() === today.getTime();
-      const isFuture = dt > today;
-      const phase = mood ? MOON_PHASES.find(p => p.e === mood) : null;
-      cellsHtml += `<span class="heatmap-cell${mood ? ' on' : ''}${isToday ? ' today' : ''}${isFuture ? ' future' : ''}" title="${ds}${mood ? ' · ' + (phase ? phase.n : '') : ''}">${mood || ''}</span>`;
-    }
-  }
-
-  $('checkinHeatmap').innerHTML =
-    `<div class="heatmap-months">${monthHtml}</div>` +
-    `<div class="heatmap-grid">${cellsHtml}</div>`;
-
-  const endStr = `${today.getFullYear()}.${today.getMonth() + 1}.${today.getDate()}`;
-  const startStr = `${start.getFullYear()}.${start.getMonth() + 1}.${start.getDate()}`;
-  $('heatmapRange').textContent = `${startStr} ~ ${endStr}`;
 }
 
 function renderMoodDist() {
@@ -1329,7 +1277,7 @@ async function renderSkyPage() {
     ctx.textBaseline = 'alphabetic';
     ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
   } catch (e) {
-    $('skyPageLegend').textContent = '星图数据未就绪，稍后自动重试';
+    $('skyPageLegend').textContent = `星图渲染失败：${e && e.message ? e.message : e}`;
     setTimeout(() => { if ($('panel-sky').classList.contains('active')) renderSkyPage(); }, 1500);
   }
 }
@@ -1338,23 +1286,28 @@ async function loadSkyPage() {
   const h = pickSkyHour();
   const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
   $('skyPageTime').value = Math.max(0, Math.min(9, v));
-  const d = await getDiscoveries();
-  state.skyLitCons = d.constellations || [];
-  await renderSkyPage();
-  await renderPlanetCard();
-  // 填写 AstronomyAPI key 后显示「高清星图」入口
-  Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
-    $('skyPageHd').style.display = (id && sec) ? '' : 'none';
-  }).catch(() => {});
-  xpOnce('sky_view', 2, '仰望今夜星空');
-  await refreshAchievements();
-  unlockAchievement('first_sky');
-  // 仅本页可见时刷新（防后台耗电）
-  if (!state.skyTimer) {
-    state.skyTimer = setInterval(() => {
-      const active = $('panel-sky').classList.contains('active') && document.visibilityState === 'visible';
-      if (active) { renderSkyPage(); renderPlanetCard(); }
-    }, 60000);
+  try {
+    const d = await getDiscoveries();
+    state.skyLitCons = d.constellations || [];
+    await renderSkyPage();
+    await renderPlanetCard();
+    // 填写 AstronomyAPI key 后显示「高清星图」入口
+    Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
+      $('skyPageHd').style.display = (id && sec) ? '' : 'none';
+    }).catch(() => {});
+    xpOnce('sky_view', 2, '仰望今夜星空');
+    await refreshAchievements();
+    unlockAchievement('first_sky');
+    // 仅本页可见时刷新（防后台耗电）
+    if (!state.skyTimer) {
+      state.skyTimer = setInterval(() => {
+        const active = $('panel-sky').classList.contains('active') && document.visibilityState === 'visible';
+        if (active) { renderSkyPage(); renderPlanetCard(); }
+      }, 60000);
+    }
+  } catch (e) {
+    $('skyPageLegend').textContent = `星空页加载失败：${e && e.message ? e.message : e}`;
+    console.error('loadSkyPage failed:', e);
   }
 }
 
