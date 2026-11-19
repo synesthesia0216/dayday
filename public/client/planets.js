@@ -208,6 +208,7 @@ export function angularSep(ra1, dec1, ra2, dec2) {
 export function conjunctions(date0, days) {
   const jd0 = toJulian(date0);
   const evs = [];
+  const lastEv = {};
   const pairs = [];
   const ids = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
   for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) pairs.push([ids[i], ids[j], 3]);
@@ -220,10 +221,14 @@ export function conjunctions(date0, days) {
       const sep = angularSep(pa.ra, pa.dec, pb.ra, pb.dec);
       if (sep < lim) {
         const key = a + '-' + b;
-        const prev = evs.find(e => e.key === key);
-        if (!prev || sep < prev.sep) {
+        const prev = lastEv[key];
+        const isNewEncounter = !prev || (t - prev.date.getTime()) > 12 * 86400e3;
+        if (isNewEncounter) {
           const item = { key, a, b, sep: +sep.toFixed(2), date: new Date(t), lim };
-          if (!prev) evs.push(item); else Object.assign(prev, item);
+          evs.push(item);
+          lastEv[key] = item;
+        } else if (sep < prev.sep) {
+          Object.assign(prev, { sep: +sep.toFixed(2), date: new Date(t) });
         }
       }
     }
@@ -245,7 +250,8 @@ export function nextFullNewMoon(date0, target, maxDays = 42) {
   let found = null;
   for (let k = 1; k <= maxDays * 4; k++) {
     const cur = f(fromJulian(t0 + k * 0.25));
-    if ((prev < target && cur >= target) || cur < prev - 180) { found = [t0 + (k - 1) * 0.25, t0 + k * 0.25]; break; }
+    // 目标 180°：只认正常穿越；目标 0°：新月即 360→0 包裹回跳
+    if (target === 180 ? (prev < target && cur >= target) : cur < prev - 180) { found = [t0 + (k - 1) * 0.25, t0 + k * 0.25]; break; }
     prev = cur;
   }
   if (!found) return null;

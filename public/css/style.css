@@ -2274,6 +2274,22 @@ button{cursor:pointer;font-family:inherit}
 .eph-remind{flex:none;align-self:center;font-size:11px;color:var(--gold);background:transparent;border:1px solid rgba(201,169,110,0.45);border-radius:10px;padding:4px 10px;letter-spacing:0.06em;cursor:pointer;}
 .eph-remind.on{color:var(--text3);border-color:var(--border);}
 
+.eph-year{margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 14px;position:relative;overflow:hidden;}
+.eph-year::before{content:'';position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,110,.55),transparent);}
+.eph-year-head{display:flex;align-items:center;justify-content:space-between;}
+.eph-year-title{font-size:16px;color:var(--text);letter-spacing:0.1em;font-weight:300;}
+.eph-year-share{font-size:11px;padding:4px 12px;}
+.eph-year-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;}
+.eph-year-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+.ey-stat{text-align:center;padding:10px 2px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);}
+.ey-num{font-size:22px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+.ey-label{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:0.08em;}
+.ey-sub{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:0.02em;line-height:1.5;}
+.eph-year-high{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;display:flex;flex-direction:column;gap:7px;}
+.ey-high-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text2);line-height:1.7;letter-spacing:0.03em;}
+.ey-high-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:7px;}
+.ey-high-txt b{color:var(--text);font-weight:500;}
+
 .sky-fs-overlay{background:rgba(3,5,12,.96);flex-direction:column;align-items:stretch;}
 .sky-fs-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;}
 .sky-fs-title{font-size:15px;color:var(--text);font-weight:300;letter-spacing:0.08em;}

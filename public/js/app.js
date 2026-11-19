@@ -741,7 +741,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => renderEphemeris().catch(() => {}), ledger: () => ledger && ledger.refresh() };
+  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }
@@ -1626,6 +1626,8 @@ $('btnShareCard').addEventListener('click', async () => {
   state.diaryToday = diaries.find(d => d.date === today) || null;
   const canvas = await generateShareCard();
   state.shareCardCanvas = canvas;
+  state.shareCardIsYear = false;
+  $('shareCardTitle').textContent = '今日星图';
   $('shareCardImg').src = canvas.toDataURL('image/png');
   $('shareCardOverlay').classList.add('open');
 });
@@ -1634,7 +1636,8 @@ $('shareCardClose').addEventListener('click', () => $('shareCardOverlay').classL
 $('shareCardOverlay').addEventListener('click', e => { if (e.target === $('shareCardOverlay')) $('shareCardOverlay').classList.remove('open'); });
 $('btnSaveShareCard').addEventListener('click', () => {
   if (!state.shareCardCanvas) return;
-  saveCanvasToDevice(state.shareCardCanvas, 'dayday-share-' + new Date().toISOString().slice(0, 10) + '.png');
+  const name = state.shareCardIsYear ? 'dayday-almanac-' + new Date().getFullYear() + '.png' : 'dayday-share-' + new Date().toISOString().slice(0, 10) + '.png';
+  saveCanvasToDevice(state.shareCardCanvas, name);
 });
 
 // ====== Notes (绘星阁) ======
@@ -3479,6 +3482,188 @@ async function renderEphemeris() {
     });
   });
 }
+
+// ====== 年度星历：全年统计 + 星卡分享 ======
+let _yearAlmanac = null; // { year, moons:[], showers:[], eclipses:[], conjCount, conjBusiestMonth }
+
+function buildYearAlmanac() {
+  const now = new Date();
+  const y = now.getFullYear();
+  if (_yearAlmanac && _yearAlmanac.year === y) return _yearAlmanac;
+  if (!planets) return null;
+
+  // 全年满月（ELP 历表逐次推进）
+  const moons = [];
+  let t = new Date(y, 0, 1);
+  for (let i = 0; i < 15; i++) {
+    const fn = planets.nextFullNewMoon(t, 180);
+    if (!fn || fn.date.getFullYear() !== y) break;
+    moons.push(fn.date);
+    t = new Date(fn.date.getTime() + 5 * 86400e3);
+  }
+
+  // 全年流星雨峰值（年度循环）
+  const showers = METEOR_SHOWERS.map(s => new Date(y, s.month - 1, s.day, 22, 0, 0));
+
+  // 本年日月食
+  const eclipses = ECLIPSES
+    .filter(e => e.date.startsWith(String(y)))
+    .map(e => { const [yy, mm, dd] = e.date.split('-').map(Number); return { ...e, at: new Date(yy, mm - 1, dd, 14, 0, 0) }; });
+
+  // 全年行星合相（<3° / 月-行星 <4°）与最密月份
+  const conj = planets.conjunctions(new Date(y, 0, 1), 365).filter(c => c.date.getFullYear() === y);
+  const monthCount = {};
+  for (const c of conj) { const m = c.date.getMonth() + 1; monthCount[m] = (monthCount[m] || 0) + 1; }
+  let busiest = 0, busiestCount = 0;
+  for (const [m, n] of Object.entries(monthCount)) if (n > busiestCount) { busiest = +m; busiestCount = n; }
+
+  _yearAlmanac = { year: y, moons, showers, eclipses, conjCount: conj.length, conjBusiestMonth: busiest, conjBusiestCount: busiestCount };
+  return _yearAlmanac;
+}
+
+function renderEphYear() {
+  const el = $('ephYear');
+  if (!el) return;
+  const a = buildYearAlmanac();
+  if (!a) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const now = new Date();
+  const remain = arr => arr.filter(d => d.getTime() > now.getTime()).length;
+  $('ephYearSub').textContent = `${a.year} 年 · 全年天象总览 · 满月 ${a.moons.length} 场`;
+
+  const stats = [
+    { num: a.moons.length, label: '满月', sub: `今年还剩 ${remain(a.moons)} 场` },
+    { num: a.showers.length, label: '流星雨', sub: `今年还剩 ${remain(a.showers)} 场` },
+    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `今年还剩 ${remain(a.eclipses.map(e => e.at))} 场` : '今年无日月食' },
+    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密在 ${a.conjBusiestMonth} 月 · ${a.conjBusiestCount} 场` : '全年无合相' },
+  ];
+  $('ephYearStats').innerHTML = stats.map(s => `<div class="ey-stat"><div class="ey-num">${s.num}</div><div class="ey-label">${s.label}</div><div class="ey-sub">${s.sub}</div></div>`).join('');
+
+  // 观测亮点：最佳流星雨 + 最壮观日月食 + 下次满月
+  const topShower = METEOR_SHOWERS.reduce((b, s) => (s.zhr > b.zhr ? s : b));
+  const eclipseScore = { '日全食': 100, '日环食': 80, '月全食': 70, '月偏食': 40 };
+  const topEclipse = a.eclipses.reduce((b, e) => (b ? (eclipseScore[e.name] || 0) > (eclipseScore[b.name] || 0) ? e : b : e), null);
+  const nextFull = a.moons.find(d => d.getTime() > now.getTime());
+  const highs = [];
+  if (topShower) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${topShower.name}峰值</b> · ${topShower.month} 月 ${topShower.day} 日 · ZHR ${topShower.zhr} · 全年最盛</span></div>`);
+  if (topEclipse) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${topEclipse.name}</b> · ${topEclipse.at.getMonth() + 1} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}</span></div>`);
+  if (nextFull) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>下次满月</b> · ${nextFull.getMonth() + 1} 月 ${nextFull.getDate()} 日 · 月光整夜可见</span></div>`);
+  $('ephYearHigh').innerHTML = highs.join('');
+}
+
+async function generateYearShareCard() {
+  const scale = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = SHARE_CARD_W * scale;
+  canvas.height = SHARE_CARD_H * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  const W = SHARE_CARD_W, H = SHARE_CARD_H;
+  const FONT = '"LXGW WenKai Lite","Noto Serif SC",serif';
+  const a = buildYearAlmanac();
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1026');
+  bg.addColorStop(0.55, '#080a1c');
+  bg.addColorStop(1, '#05060f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  if (sky) {
+    try {
+      const loc = await getObsLocation();
+      await sky.render(ctx, {
+        lat: loc.lat, lon: loc.lon, date: skyDateAt(pickSkyHour()),
+        cx: W / 2, cy: 150, radius: 150, w: W, h: H,
+        showLabels: false, dim: 0.4,
+      });
+    } catch (e) { /* 星图未就绪则保持纯夜色背景 */ }
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(201,169,110,0.9)';
+  ctx.font = `12px ${FONT}`;
+  ctx.fillText('D A Y - D A Y  ·  年 度 星 历', W / 2, 44);
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.font = `12px ${FONT}`;
+  ctx.fillText(`${a.year} 年 · 全年天象总览`, W / 2, 66);
+
+  ctx.strokeStyle = 'rgba(201,169,110,0.25)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(W * 0.16, 92); ctx.lineTo(W * 0.84, 92); ctx.stroke();
+
+  // 大数字统计 2×2
+  const now = new Date();
+  const remain = arr => arr.filter(d => d.getTime() > now.getTime()).length;
+  const cells = [
+    { num: a.moons.length, label: '满月', sub: `剩余 ${remain(a.moons)} 场` },
+    { num: a.showers.length, label: '流星雨', sub: `剩余 ${remain(a.showers)} 场` },
+    { num: a.eclipses.length, label: '日月食', sub: `剩余 ${remain(a.eclipses.map(e => e.at))} 场` },
+    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密 ${a.conjBusiestMonth} 月` : '—' },
+  ];
+  cells.forEach((c, i) => {
+    const cx = i % 2 === 0 ? W * 0.28 : W * 0.72;
+    const cy = 140 + Math.floor(i / 2) * 96;
+    ctx.fillStyle = '#f2ead8';
+    ctx.font = `34px ${FONT}`;
+    ctx.fillText(String(c.num), cx, cy);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `13px ${FONT}`;
+    ctx.fillText(c.label, cx, cy + 26);
+    ctx.fillStyle = 'rgba(201,169,110,0.85)';
+    ctx.font = `10px ${FONT}`;
+    ctx.fillText(c.sub, cx, cy + 46);
+  });
+
+  ctx.strokeStyle = 'rgba(201,169,110,0.25)';
+  ctx.beginPath(); ctx.moveTo(W * 0.16, 330); ctx.lineTo(W * 0.84, 330); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(201,169,110,0.9)';
+  ctx.font = `13px ${FONT}`;
+  ctx.fillText('观 测 亮 点', W / 2, 360);
+
+  const topShower = METEOR_SHOWERS.reduce((b, s) => (s.zhr > b.zhr ? s : b));
+  const eclipseScore = { '日全食': 100, '日环食': 80, '月全食': 70, '月偏食': 40 };
+  const topEclipse = a.eclipses.reduce((b, e) => (b ? (eclipseScore[e.name] || 0) > (eclipseScore[b.name] || 0) ? e : b : e), null);
+  const nextFull = a.moons.find(d => d.getTime() > now.getTime());
+  const lines = [];
+  if (topShower) lines.push({ t: `${topShower.name}峰值`, d: `${topShower.month} 月 ${topShower.day} 日 · ZHR ${topShower.zhr}` });
+  if (topEclipse) lines.push({ t: topEclipse.name, d: `${topEclipse.at.getMonth() + 1} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}` });
+  if (nextFull) lines.push({ t: '下次满月', d: `${nextFull.getMonth() + 1} 月 ${nextFull.getDate()} 日 · 月光整夜可见` });
+  lines.forEach((l, i) => {
+    const ly = 396 + i * 54;
+    ctx.fillStyle = '#f2ead8';
+    ctx.font = `14px ${FONT}`;
+    ctx.fillText(l.t, W / 2, ly);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `11px ${FONT}`;
+    ctx.fillText(l.d, W / 2, ly + 20);
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.font = `10px ${FONT}`;
+  ctx.fillText('基于 ELP 月相历表与行星根数 · 全离线计算', W / 2, H - 58);
+  const p = state.profile || {};
+  ctx.fillStyle = 'rgba(201,169,110,0.85)';
+  ctx.font = `13px ${FONT}`;
+  ctx.fillText((p.displayName || '观测者') + (p.celestialName ? ' · ' + p.celestialName : ''), W / 2, H - 32);
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.font = `10px ${FONT}`;
+  ctx.fillText('Day-Day 观星台', W / 2, H - 12);
+
+  return canvas;
+}
+
+$('btnEphYearShare').addEventListener('click', async () => {
+  try {
+    const canvas = await generateYearShareCard();
+    state.shareCardCanvas = canvas;
+    state.shareCardIsYear = true;
+    $('shareCardTitle').textContent = '年度星历';
+    $('shareCardImg').src = canvas.toDataURL('image/png');
+    $('shareCardOverlay').classList.add('open');
+  } catch (e) { toast('星卡生成失败 · 稍后重试'); }
+});
 
 // ====== 本地通知调度（原生 APK 环境生效，浏览器静默跳过） ======
 const notifications = {

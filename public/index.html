@@ -368,6 +368,15 @@
   <!-- 星历（天文日历） -->
   <section class="panel panel-scroll" id="panel-ephemeris">
     <div class="topbar"><h2>星历</h2><span class="eph-hint">未来 60 天 · 全离线历表</span></div>
+    <div class="eph-year" id="ephYear">
+      <div class="eph-year-head">
+        <div class="eph-year-title">年度星历</div>
+        <button type="button" class="btn btn-ghost eph-year-share" id="btnEphYearShare">生成星卡</button>
+      </div>
+      <div class="eph-year-sub" id="ephYearSub"></div>
+      <div class="eph-year-stats" id="ephYearStats"></div>
+      <div class="eph-year-high" id="ephYearHigh"></div>
+    </div>
     <div class="eph-list" id="ephList"></div>
   </section>
 
@@ -745,7 +754,7 @@
 <div class="overlay" id="shareCardOverlay">
   <div class="share-card-modal">
     <div class="modal-head">
-      <span class="modal-title-text">今日星图</span>
+      <span class="modal-title-text" id="shareCardTitle">今日星图</span>
       <button class="modal-close" id="shareCardClose">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
