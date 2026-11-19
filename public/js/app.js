@@ -199,7 +199,7 @@ let token = localStorage.getItem('nox_token') || '';
 let state = {
   panel: 'stargaze', notes: [], diary: [], reminders: [], checkins: [],
   todayCheckin: null, streak: 0, noteType: 'all',
-  skyFsCons: [], skyLitCons: [],
+  skyCons: [], skyLitCons: [],
   calYear: 0, calMonth: 0, selectedMoon: null,
   editing: null, sTimer: null,
   storyTab: 'collection', profile: null,
@@ -664,7 +664,7 @@ $('btnSaveProfile').addEventListener('click', async () => {
   await db.settings.set('astro_api_id', $('profileAstronomyId').value.trim() || null);
   await db.settings.set('astro_api_secret', $('profileAstronomySecret').value.trim() || null);
   state.obs = null; // 让下次读取重新加载
-  renderSkyCard();
+  renderSkyPage();
   renderProfile();
   $('profileOverlay').classList.remove('open');
   toast('星轨档案已更新');
@@ -764,7 +764,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, records: loadRecords, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
+  const fn = { stargaze: loadStargaze, sky: loadSkyPage, records: loadRecords, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }
@@ -1126,15 +1126,6 @@ async function loadStargaze() {
   state.moonData = await moonCalc.getMoonPhase();
   await loadStargazeData();
   renderMoodGrid();
-  // 今夜星空卡（仅可见时刷新，防后台耗电）
-  await renderSkyCard();
-  await renderPlanetCard();
-  if (!state.skyTimer) {
-    state.skyTimer = setInterval(() => {
-      const active = $('panel-stargaze').classList.contains('active') && document.visibilityState === 'visible';
-      if (active) { renderSkyCard(); renderPlanetCard(); }
-    }, 60000);
-  }
   // Moon hero
   if (state.moonData) {
     const m = state.moonData;
@@ -1309,25 +1300,66 @@ async function drawPlanetsLayer(ctx, opts) {
   return drawn;
 }
 
-async function renderSkyCard() {
+// ====== 今夜星空（独立页：大星图 + 时间滑杆 + 今日行星） ======
+function skyPageHour() { return (20 + parseInt($('skyPageTime').value)) % 24; }
+
+async function renderSkyPage() {
   if (!sky || !state.obs && !(await getObsLocation())) return;
-  const cv = $('skyCardCanvas');
-  const w = cv.clientWidth || 340, h = 190;
+  const cv = $('skyPageCanvas');
+  const wrap = cv.parentElement;
+  const w = wrap.clientWidth || 340, h = cv.clientHeight || 320;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = w * dpr; cv.height = h * dpr;
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const date = skyDateAt(pickSkyHour());
-  const R = Math.min(w / 2 - 16, h / 2 - 12);
+  const R = Math.min(w / 2 - 20, h / 2 - 16);
+  const date = skyDateAt(skyPageHour());
+  const loc = state.obs;
   try {
-    state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h, showLabels: false });
-    await drawPlanetsLayer(ctx, { date, lat: state.obs.lat, lon: state.obs.lon, cx: w / 2, cy: h / 2 + 2, R, mini: true });
-    const hh = String(date.getHours()).padStart(2, '0');
-    $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00`;
+    const r = await sky.render(ctx, {
+      lat: loc.lat, lon: loc.lon, date,
+      cx: w / 2, cy: h / 2, radius: R, w, h,
+      showStarLabels: true,
+      highlight: state.skyLitCons || [],
+    });
+    state.skyStats = r;
+    state.skyCons = r.constellations || [];
+    const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: w / 2, cy: h / 2, R, mini: false });
+    $('skyPageTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
+    $('skyPageLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
+    $('skyPageLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
+    ctx.fillStyle = 'rgba(226,232,248,0.30)';
+    ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
   } catch (e) {
-    $('skyCardSub').textContent = '星图数据未就绪，稍后自动重试';
-    // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
-    setTimeout(() => { if ($('panel-stargaze').classList.contains('active')) renderSkyCard(); }, 1500);
+    $('skyPageLegend').textContent = '星图数据未就绪，稍后自动重试';
+    setTimeout(() => { if ($('panel-sky').classList.contains('active')) renderSkyPage(); }, 1500);
+  }
+}
+
+async function loadSkyPage() {
+  const h = pickSkyHour();
+  const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
+  $('skyPageTime').value = Math.max(0, Math.min(9, v));
+  const d = await getDiscoveries();
+  state.skyLitCons = d.constellations || [];
+  await renderSkyPage();
+  await renderPlanetCard();
+  // 填写 AstronomyAPI key 后显示「高清星图」入口
+  Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
+    $('skyPageHd').style.display = (id && sec) ? '' : 'none';
+  }).catch(() => {});
+  xpOnce('sky_view', 2, '仰望今夜星空');
+  await refreshAchievements();
+  unlockAchievement('first_sky');
+  // 仅本页可见时刷新（防后台耗电）
+  if (!state.skyTimer) {
+    state.skyTimer = setInterval(() => {
+      const active = $('panel-sky').classList.contains('active') && document.visibilityState === 'visible';
+      if (active) { renderSkyPage(); renderPlanetCard(); }
+    }, 60000);
   }
 }
 
@@ -1358,66 +1390,11 @@ async function renderPlanetCard() {
   $('planetCardSub').textContent = vis.length ? `今夜可见 ${vis.length} 颗 · 实时历表` : '实时历表 · 全离线';
 }
 
-function skyFsHour() { return (20 + parseInt($('skyFsTime').value)) % 24; }
-
-async function renderSkyFs() {
-  if (!sky) return;
-  const cv = $('skyFsCanvas');
-  const wrap = $('skyFsOverlay').querySelector('.sky-fs-body');
-  const w = wrap.clientWidth, h = wrap.clientHeight;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  cv.width = w * dpr; cv.height = h * dpr;
-  const ctx = cv.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const R = Math.min(w / 2 - 20, h / 2 - 16);
-  const date = skyDateAt(skyFsHour());
-  const loc = await getObsLocation();
-  const r = await sky.render(ctx, {
-    lat: loc.lat, lon: loc.lon, date,
-    cx: w / 2, cy: h / 2, radius: R, w, h,
-    showStarLabels: true,
-    highlight: state.skyLitCons || [],
-  });
-  state.skyFsStats = r;
-  state.skyFsCons = r.constellations || [];
-  const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: w / 2, cy: h / 2, R, mini: false });
-  $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
-  $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
-  $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
-  ctx.fillStyle = 'rgba(226,232,248,0.30)';
-  ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
-}
-
-async function openSkyOverlay() {
-  const h = pickSkyHour();
-  const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
-  $('skyFsTime').value = Math.max(0, Math.min(9, v));
-  $('skyFsOverlay').classList.add('open');
-  const d = await getDiscoveries();
-  state.skyLitCons = d.constellations || [];
-  await renderSkyFs();
-  // 填写 AstronomyAPI key 后显示「高清星图」入口
-  Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
-    $('skyFsHd').style.display = (id && sec) ? '' : 'none';
-  }).catch(() => {});
-  xpOnce('sky_view', 2, '仰望今夜星空');
-  await refreshAchievements();
-  unlockAchievement('first_sky');
-}
-
-function closeSkyOverlay() { $('skyFsOverlay').classList.remove('open'); }
-
-$('skyCard').addEventListener('click', openSkyOverlay);
-$('skyFsClose').addEventListener('click', closeSkyOverlay);
-$('skyFsOverlay').addEventListener('click', e => { if (e.target === $('skyFsOverlay')) closeSkyOverlay(); });
-$('skyFsTime').addEventListener('input', renderSkyFs);
-$('skyFsCanvas').addEventListener('click', async e => {
-  const cons = state.skyFsCons || [];
+$('skyPageTime').addEventListener('input', renderSkyPage);
+$('skyPageCanvas').addEventListener('click', async e => {
+  const cons = state.skyCons || [];
   if (!cons.length) return;
-  const rect = $('skyFsCanvas').getBoundingClientRect();
+  const rect = $('skyPageCanvas').getBoundingClientRect();
   const x = e.clientX - rect.left, y = e.clientY - rect.top;
   let hit = null;
   for (const c of cons) {
@@ -1431,7 +1408,7 @@ $('skyFsCanvas').addEventListener('click', async e => {
     toast('「' + hit.zh + '」已点亮 · +8 XP');
     await unlockAchievement('first_const');
     await checkAchievements();
-    renderSkyFs();
+    renderSkyPage();
   } else {
     toast(hit.zh + ' · 已点亮');
   }
@@ -2486,7 +2463,7 @@ async function requestHdStarChart() {
   toast('正在请求高清星图…');
   try {
     const loc = await getObsLocation();
-    const d = skyDateAt(skyFsHour());
+    const d = skyDateAt(skyPageHour());
     const { gmstDeg } = await import('../client/star-chart.js');
     const lst = (gmstDeg(d) + loc.lon + 360) % 360;
     const body = {
@@ -2515,7 +2492,7 @@ async function requestHdStarChart() {
     toast('高清星图请求失败，请检查 key 与网络');
   }
 }
-$('skyFsHd').addEventListener('click', requestHdStarChart);
+$('skyPageHd').addEventListener('click', requestHdStarChart);
 $('astroHdClose').addEventListener('click', () => $('astroHdOverlay').classList.remove('open'));
 $('astroHdOverlay').addEventListener('click', e => { if (e.target === $('astroHdOverlay')) $('astroHdOverlay').classList.remove('open'); });
 

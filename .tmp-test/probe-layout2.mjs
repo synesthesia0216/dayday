@@ -31,7 +31,7 @@ await evalJs(`localStorage.setItem('nox_token','unlocked')`);
 await send('Page.navigate', { url: 'http://localhost:3099/?diag=4' });
 await sleep(3800);
 
-// 1) 观星台：滚动 + 各块间距 + 块清单
+// 1) 观星台：滚动 + 各块间距 + 块清单（应只有 时钟/月亮/统计/打卡 四块，一屏放下）
 console.log('stargaze:', await evalJs(`(() => {
   const p = document.getElementById('panel-stargaze');
   const kids = [...p.children].map(c => ({ id: c.id, cls: c.className.slice(0, 30) }));
@@ -45,6 +45,27 @@ await evalJs(`document.getElementById('panel-stargaze').scrollTop = 9999`);
 await sleep(400);
 await shot('stargaze-bottom.png');
 await evalJs(`document.getElementById('panel-stargaze').scrollTop = 0`);
+
+// 1.5) 今夜星空页：canvas 尺寸 + 页面可滚动
+await evalJs(`goPanel('sky')`);
+await sleep(3000);
+console.log('skyPage:', await evalJs(`(() => {
+  const p = document.getElementById('panel-sky');
+  const sc = p.querySelector('.panel-scroll');
+  const cv = document.getElementById('skyPageCanvas');
+  const r = cv.getBoundingClientRect();
+  return JSON.stringify({
+    active: p.classList.contains('active'),
+    scClientH: sc.clientHeight, scScrollH: sc.scrollHeight,
+    canvasCss: Math.round(r.width) + 'x' + Math.round(r.height),
+    legend: document.getElementById('skyPageLegend').textContent,
+    loc: document.getElementById('skyPageLoc').textContent,
+    planetRows: document.querySelectorAll('#planetList .planet-row').length
+  });
+})()`));
+await shot('sky-page.png');
+await evalJs(`goPanel('stargaze')`);
+await sleep(800);
 
 // 2) 观测日志页
 await evalJs(`goPanel('records')`);

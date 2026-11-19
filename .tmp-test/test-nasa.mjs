@@ -99,19 +99,16 @@ await ev(`(async () => { const s = await (await import('../client/db.js')).defau
 await assert('nasa_key 已保存', `import('../client/db.js').then(async m => (await m.default.settings.get('nasa_key')) === 'TESTKEY123')`);
 await assert('astro_api_secret 已保存', `import('../client/db.js').then(async m => (await m.default.settings.get('astro_api_secret')) === 'test-secret')`);
 
-// 5. 星空弹层：填 key 后显示高清星图按钮
-await ev(`goPanel('stargaze')`);
-await sleep(1200);
-await ev(`document.getElementById('skyCard').click()`);
+// 5. 今夜星空页：填 key 后显示高清星图按钮
+await ev(`goPanel('sky')`);
 await sleep(2000);
-await assert('星空弹层打开且高清按钮可见', `document.getElementById('skyFsOverlay').classList.contains('open') && document.getElementById('skyFsHd').style.display !== 'none'`);
+await assert('星空页高清按钮可见', `document.getElementById('skyPageHd').style.display !== 'none'`);
 await shot('nasa-hd-btn.png');
 
 // 6. 点击高清星图（假 key → 优雅失败，无异常，弹层不打开）
-await ev(`document.getElementById('skyFsHd').click()`);
+await ev(`document.getElementById('skyPageHd').click()`);
 await sleep(3500);
 await assert('假 key 请求优雅失败（HD 弹层未打开）', `!document.getElementById('astroHdOverlay').classList.contains('open')`);
-await ev(`document.getElementById('skyFsClose').click()`);
 
 // 7. 无 JS 异常
 await sleep(600);

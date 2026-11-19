@@ -43,11 +43,14 @@ console.log('panels:', await evalJs(`(() => {
   return JSON.stringify(out);
 })()`));
 
-// 2) 星空卡 canvas 属性尺寸 vs CSS 尺寸
-console.log('skyCardCanvas:', await evalJs(`(() => {
-  const cv = document.getElementById('skyCardCanvas');
-  const r = cv.getBoundingClientRect();
-  return JSON.stringify({ attrW: cv.width, attrH: cv.height, cssW: Math.round(r.width), cssH: Math.round(r.height) });
+// 2) 星空页 canvas 属性尺寸 vs CSS 尺寸
+console.log('skyPageCanvas:', await evalJs(`(() => {
+  goPanel('sky');
+  return new Promise(r => setTimeout(() => {
+    const cv = document.getElementById('skyPageCanvas');
+    const rect = cv.getBoundingClientRect();
+    r(JSON.stringify({ attrW: cv.width, attrH: cv.height, cssW: Math.round(rect.width), cssH: Math.round(rect.height) }));
+  }, 2500));
 })()`));
 
 // 3) 年度星历统计网格
@@ -73,8 +76,8 @@ console.log('moonHero:', await evalJs(`(() => {
   });
 })()`));
 
-// 5) 星空卡副标题文本（文字是否过多）
-console.log('skyCardSub:', await evalJs(`document.getElementById('skyCardSub').textContent`));
+// 5) 星空页图例与位置文本
+console.log('skyPageInfo:', await evalJs(`JSON.stringify({ legend: document.getElementById('skyPageLegend').textContent, loc: document.getElementById('skyPageLoc').textContent })`));
 
 ws.close();
 process.exit(0);

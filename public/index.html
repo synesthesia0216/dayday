@@ -76,6 +76,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>
       <span>观星台</span>
     </a>
+    <a class="nav-link" data-panel="sky">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
+      <span>今夜星空</span>
+    </a>
     <a class="nav-link" data-panel="records">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span>观测日志</span>
@@ -191,25 +195,6 @@
       </div>
     </div>
 
-    <!-- 今夜星空（真实星图） -->
-    <div class="sky-card stg-item" id="skyCard">
-      <div class="card-head">
-        <span class="card-title">今夜星空</span>
-        <span class="card-sub" id="skyCardSub">--</span>
-      </div>
-      <canvas id="skyCardCanvas"></canvas>
-      <div class="sky-card-hint">点击展开 · 看整夜星空</div>
-    </div>
-
-    <!-- 今日行星（真实历表 · 全离线） -->
-    <div class="sky-card stg-item" id="planetCard">
-      <div class="card-head">
-        <span class="card-title">今日行星</span>
-        <span class="card-sub" id="planetCardSub">--</span>
-      </div>
-      <div class="planet-list" id="planetList"></div>
-    </div>
-
     <!-- 今夜打卡（满宽） -->
     <div class="checkin-card stg-item" id="checkinCard">
       <div class="card-head">
@@ -223,6 +208,32 @@
           <div class="birthday-msg" id="birthdayMsg"></div>
           <div class="birthday-story" id="birthdayStory"></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 今夜星空（实时星图 + 今日行星） -->
+  <section class="panel" id="panel-sky">
+    <div class="topbar">
+      <h2>今夜星空</h2>
+      <span class="sky-page-loc" id="skyPageLoc">--</span>
+      <button class="btn sky-page-hd" id="skyPageHd" style="display:none;">高清星图</button>
+    </div>
+    <div class="panel-scroll">
+      <div class="sky-page-wrap stg-item">
+        <canvas id="skyPageCanvas"></canvas>
+        <div class="sky-page-legend" id="skyPageLegend"></div>
+      </div>
+      <div class="sky-page-slider stg-item">
+        <input type="range" id="skyPageTime" min="0" max="9" step="1" value="1">
+        <div class="sky-page-time" id="skyPageTimeLabel">21:00</div>
+      </div>
+      <div class="sky-card stg-item" id="planetCard">
+        <div class="card-head">
+          <span class="card-title">今日行星</span>
+          <span class="card-sub" id="planetCardSub">--</span>
+        </div>
+        <div class="planet-list" id="planetList"></div>
       </div>
     </div>
   </section>
@@ -522,23 +533,6 @@
 <!-- 月相选择弹窗 -->
 <div class="overlay" id="moonOverlay">
   <div class="moon-modal" id="moonModal"></div>
-</div>
-
-<!-- 今夜星空全屏 -->
-<div class="overlay sky-fs-overlay" id="skyFsOverlay">
-  <div class="sky-fs-topbar">
-    <span class="sky-fs-title">今夜星空 <i id="skyFsLoc"></i></span>
-    <button class="sky-fs-hd" id="skyFsHd" style="display:none;">高清星图</button>
-    <button class="modal-close" id="skyFsClose">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  <div class="sky-fs-body"><canvas id="skyFsCanvas"></canvas></div>
-  <div class="sky-fs-legend" id="skyFsLegend"></div>
-  <div class="sky-fs-slider-wrap">
-    <input type="range" id="skyFsTime" min="0" max="9" step="1" value="1">
-    <div class="sky-fs-time-label" id="skyFsTimeLabel">21:00</div>
-  </div>
 </div>
 
 <!-- 联网书库（古腾堡计划公版书） -->
