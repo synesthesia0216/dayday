@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday, ledger, sky, moon3d, music, cosmosArt;
+let db, auth, moonCalc, birthday, ledger, sky, moon3d, music, cosmosArt, planets;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -223,6 +223,7 @@ async function loadModules() {
   sky = (await import('../client/star-chart.js')).default;
   moon3d = (await import('../client/moon-3d.js')).default;
   moon3d.preloadMoonTexture(); // 预热月面纹理（渲染时秒出）
+  planets = (await import('../client/planets.js')).default;
   cosmosArt = (await import('../client/cosmos-art.js')).default;
   // Load local mythology
   try {
@@ -1087,10 +1088,11 @@ async function loadStargaze() {
   renderMoodGrid();
   // 今夜星空卡（仅可见时刷新，防后台耗电）
   await renderSkyCard();
+  await renderPlanetCard();
   if (!state.skyTimer) {
     state.skyTimer = setInterval(() => {
       const active = $('panel-stargaze').classList.contains('active') && document.visibilityState === 'visible';
-      if (active) renderSkyCard();
+      if (active) { renderSkyCard(); renderPlanetCard(); }
     }, 60000);
   }
   // Moon hero
@@ -1224,6 +1226,56 @@ function skyDateAt(hour) {
   return d;
 }
 
+// ====== 行星/月球叠加层：真实历表位置投影到已渲染星图之上（全离线） ======
+let moonSketchCv = null;
+
+async function drawPlanetsLayer(ctx, opts) {
+  if (!planets || !sky) return [];
+  const { date, lat, lon, cx, cy, R, mini } = opts;
+  const lst = planets.gmstDeg(date) + lon;
+  const drawn = [];
+  // 月球：moon3d 真实月面纹理小圆盘（相位/光照由 ELP 历表计算）
+  const mp = planets.moonPos(date);
+  const mh = sky.eqToHoriz(mp.ra, mp.dec, lst, lat);
+  if (mh.alt > -3) {
+    const p = sky.altazToXY(mh.alt, mh.az, R);
+    const moonR = mini ? 5 : 7.5;
+    if (p.r < R * 0.96) {
+      if (!moonSketchCv) moonSketchCv = document.createElement('canvas');
+      try {
+        await moon3d.renderMoon(moonSketchCv, { phase: mp.age / 360, illumination: mp.illum * 100 }, Math.round(moonR * 2));
+        ctx.drawImage(moonSketchCv, cx + p.x - moonR, cy + p.y - moonR, moonR * 2, moonR * 2);
+      } catch (e) { /* 纹理未就绪则本轮跳过月球叠加 */ }
+      drawn.push({ id: 'moon', x: cx + p.x, y: cy + p.y, alt: +mh.alt.toFixed(0) });
+    }
+  }
+  // 五大行星：星等 → 点大小，亮星加同色辉光
+  for (const id of ['mercury', 'venus', 'mars', 'jupiter', 'saturn']) {
+    const pp = planets.planetPos(date, id);
+    const h = sky.eqToHoriz(pp.ra, pp.dec, lst, lat);
+    if (h.alt < -2) continue;
+    const p = sky.altazToXY(h.alt, h.az, R);
+    if (p.r > R * 0.98) continue;
+    const info = planets.PLANET_INFO[id];
+    const dot = mini ? Math.max(1.4, Math.min(3.4, 4.2 - pp.mag)) : Math.max(2, Math.min(5.5, 5.2 - pp.mag));
+    const px = cx + p.x, py = cy + p.y;
+    ctx.save();
+    ctx.shadowColor = info.color;
+    ctx.shadowBlur = dot * 2.2;
+    ctx.fillStyle = info.color;
+    ctx.beginPath(); ctx.arc(px, py, dot / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    if (!mini) {
+      ctx.fillStyle = 'rgba(201,169,110,0.92)';
+      ctx.font = '9px "LXGW WenKai Lite","Noto Serif SC",serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${info.name} ${pp.mag.toFixed(1)}`, px + dot, py - 0.5);
+    }
+    drawn.push({ id, x: px, y: py, alt: +h.alt.toFixed(0), mag: +pp.mag.toFixed(1), label: info.name });
+  }
+  return drawn;
+}
+
 async function renderSkyCard() {
   if (!sky || !state.obs && !(await getObsLocation())) return;
   const cv = $('skyCardCanvas');
@@ -1236,6 +1288,7 @@ async function renderSkyCard() {
   const R = Math.min(w / 2 - 16, h / 2 - 12);
   try {
     state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h });
+    await drawPlanetsLayer(ctx, { date, lat: state.obs.lat, lon: state.obs.lon, cx: w / 2, cy: h / 2 + 2, R, mini: true });
     const hh = String(date.getHours()).padStart(2, '0');
     $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00 · 星等≤4.5`;
   } catch (e) {
@@ -1243,6 +1296,33 @@ async function renderSkyCard() {
     // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
     setTimeout(() => { if ($('panel-stargaze').classList.contains('active')) renderSkyCard(); }, 1500);
   }
+}
+
+// ====== 今日行星卡（真实历表 · 今夜可见） ======
+async function renderPlanetCard() {
+  const list = $('planetList');
+  if (!list || !planets) return;
+  const loc = await getObsLocation();
+  const now = new Date();
+  const vis = planets.visiblePlanets(now, loc.lat, loc.lon);
+  const fmt = (d) => d ? String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') : '—';
+  const rows = vis.map(v => {
+    const line = `星等 ${v.mag} · 升起 ${fmt(v.rise)} · 落下 ${fmt(v.set)}`;
+    return `<div class="planet-row" title="${esc(v.blurb)}">
+      <span class="planet-dot" style="background:${v.color};box-shadow:0 0 8px ${v.color}66;"></span>
+      <span class="planet-name">${esc(v.name)}</span>
+      <span class="planet-meta">${line}</span>
+    </div>`;
+  });
+  const moon = planets.moonPos(now);
+  rows.push(`<div class="planet-row" title="${esc(planets.PLANET_INFO.moon.blurb)}">
+    <span class="planet-dot" style="background:#f4f1e8;box-shadow:0 0 8px #f4f1e866;"></span>
+    <span class="planet-name">月球</span>
+    <span class="planet-meta">光照 ${(moon.illum * 100).toFixed(0)}% · 距离 ${(moon.distKm / 10000).toFixed(1)} 万公里</span>
+  </div>`);
+  if (!vis.length) rows.unshift(`<div class="planet-empty">今夜无行星可见 · 明晚再会</div>`);
+  list.innerHTML = rows.join('');
+  $('planetCardSub').textContent = vis.length ? `今夜可见 ${vis.length} 颗 · 实时历表` : '实时历表 · 全离线';
 }
 
 function skyFsHour() { return (20 + parseInt($('skyFsTime').value)) % 24; }
@@ -1267,9 +1347,10 @@ async function renderSkyFs() {
   });
   state.skyFsStats = r;
   state.skyFsCons = r.constellations || [];
+  const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: w / 2, cy: h / 2, R, mini: false });
   $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
   $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
-  $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 方位圈中心为天顶`;
+  $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
   ctx.fillStyle = 'rgba(226,232,248,0.30)';
   ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
   ctx.textAlign = 'right';
@@ -1511,6 +1592,19 @@ async function generateShareCard() {
     ctx.fillStyle = 'rgba(255,255,255,0.62)';
     ctx.font = `13px ${FONT}`;
     ctx.fillText('「' + excerpt + '」', W / 2, 548);
+  }
+
+  // 今夜可见行星（真实历表）
+  if (planets) {
+    try {
+      const loc = await getObsLocation();
+      const vis = planets.visiblePlanets(new Date(), loc.lat, loc.lon);
+      if (vis.length) {
+        ctx.fillStyle = 'rgba(226,232,248,0.55)';
+        ctx.font = `12px ${FONT}`;
+        ctx.fillText('今夜行星 · ' + vis.slice(0, 3).map(v => `${v.name} ${v.mag}`).join(' · '), W / 2, 580);
+      }
+    } catch (e) { /* 历表未就绪则省略 */ }
   }
 
   // 底部署名
