@@ -152,18 +152,18 @@
     <div class="hero-stats stg-item" id="heroStats">
       <div class="hero-stat">
         <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg></div>
-        <div class="hero-stat-val" id="heroStatStreak">—</div>
+        <div class="hero-stat-val" id="heroStatStreak">--</div>
         <div class="hero-stat-label">连续观测</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <div class="hero-stat-val" id="heroStatLevel">Lv.—</div>
+        <div class="hero-stat-val" id="heroStatLevel">Lv.--</div>
         <div class="hero-stat-label" id="heroStatLevelName">星阶</div>
         <div class="hero-xp-track"><div class="hero-xp-fill" id="heroXpFill"></div></div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div class="hero-stat-val" id="heroStatNotes">—</div>
+        <div class="hero-stat-val" id="heroStatNotes">--</div>
         <div class="hero-stat-label">星图笔记</div>
       </div>
     </div>
@@ -172,7 +172,7 @@
     <div class="sky-card stg-item" id="skyCard">
       <div class="card-head">
         <span class="card-title">今夜星空</span>
-        <span class="card-sub" id="skyCardSub">—</span>
+        <span class="card-sub" id="skyCardSub">--</span>
       </div>
       <canvas id="skyCardCanvas"></canvas>
       <div class="sky-card-hint">点击展开 · 看整夜星空</div>
@@ -236,7 +236,7 @@
     <div class="panel-scroll">
       <div class="card-grid" id="notesGrid"></div>
       <button class="load-more-btn" id="notesLoadMore" style="display:none;" onclick="loadNotes()">加载更多星图</button>
-      <div class="empty" id="notesEmpty">尚无星图</div>
+      <div class="empty" id="notesEmpty">尚无星图<br>点右上角「＋」，写下第一篇笔记</div>
     </div>
   </section>
 
@@ -248,7 +248,7 @@
     </div>
     <div class="panel-scroll">
       <div class="diary-list" id="diaryList"></div>
-      <div class="empty" id="diaryEmpty">星光未落笔，每次观测都是一段星轨</div>
+      <div class="empty" id="diaryEmpty">星光未落笔<br>点右上角「＋」，写下第一段星轨</div>
     </div>
   </section>
 
@@ -259,7 +259,7 @@
         <h2>神话书库</h2>
         <div class="search">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="storySearchInput" placeholder="探寻神话...">
+          <input type="text" id="storySearchInput" placeholder="探寻神话…">
         </div>
         <button class="btn btn-random" id="btnRandomStory" title="召唤星辰故事">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
@@ -274,8 +274,8 @@
     <div class="panel-scroll myth-scroll">
       <div class="story-collection-grid" id="storyCollectionGrid"></div>
       <div class="story-search-results" id="storySearchResults" style="display:none;"></div>
-      <div class="empty" id="storyCollectionEmpty">星尘未至<br>记录月相，故事自然汇聚</div>
-      <div class="empty" id="storySearchEmpty" style="display:none;">没有找到</div>
+      <div class="empty" id="storyCollectionEmpty">星尘未至<br>在观星台记录月相，故事会循光而来</div>
+      <div class="empty" id="storySearchEmpty" style="display:none;">没有找到相关故事<br>换个关键词试试</div>
     </div>
   </section>
 
@@ -349,7 +349,7 @@
   <section class="panel panel-scroll" id="panel-navigate">
     <div class="topbar"><h2>坐标日志</h2><button class="btn" id="btnNewReminder">+ 设定航向</button></div>
     <div class="coord-list" id="remindersList"></div>
-    <div class="empty" id="remindersEmpty">尚未设定航向<br>设下坐标，到点提醒</div>
+    <div class="empty" id="remindersEmpty">尚未设定航向<br>点「＋ 设定航向」，设下坐标与到点提醒</div>
   </section>
 
   <!-- 记账 -->
@@ -377,7 +377,7 @@
           <span>结余 <b id="ledgerBalance">¥0.00</b></span>
         </div>
         <div class="ledger-summary-meta">
-          <span>较上月 <b id="ledgerDelta">—</b></span>
+          <span>较上月 <b id="ledgerDelta">--</b></span>
           <span>日均 <b id="ledgerDaily">¥0.00</b></span>
         </div>
       </div>
@@ -407,7 +407,7 @@
     </div>
     <div class="modal-meta" id="modalMeta"></div>
     <div class="modal-body">
-      <textarea class="modal-textarea" id="modalContent" placeholder="写点什么..."></textarea>
+      <textarea class="modal-textarea" id="modalContent" placeholder="写点什么…"></textarea>
       <div class="modal-images" id="modalImages"></div>
       <!-- 绘制面板 -->
       <div class="draw-wrap" id="drawWrap" style="display:none;">
@@ -583,7 +583,7 @@
       </button>
     </div>
     <div class="modal-body saved-objects-body" id="savedObjectsBody"></div>
-    <div class="empty" id="savedObjectsEmpty" style="padding:32px 0;">尚无收藏<br>图鉴中点击天体即可收藏</div>
+    <div class="empty" id="savedObjectsEmpty" style="padding:32px 0;">尚无收藏<br>在图鉴中点开天体，即可收进这里</div>
   </div>
 </div>
 
@@ -627,7 +627,8 @@
       </div>
       <!-- 观测地点 -->
       <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
-        <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">观测地点（用于星空渲染）</label>
+        <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">观测地点</label>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">用于渲染今夜星空与分享星图</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="login-input" type="text" id="profileCity" placeholder="城市名" maxlength="12" style="flex:1;text-align:center;">
           <button class="login-btn" id="btnLocate" style="flex:0 0 auto;padding:8px 12px;font-size:12px;">定位</button>
@@ -644,7 +645,7 @@
         <input class="login-input" type="text" id="profileNasaKey" placeholder="NASA API Key（留空用公共额度）" autocomplete="off">
         <input class="login-input" type="text" id="profileAstronomyId" placeholder="AstronomyAPI Application ID" autocomplete="off">
         <input class="login-input" type="password" id="profileAstronomySecret" placeholder="AstronomyAPI Application Secret" autocomplete="off">
-        <div style="font-size:10px;color:var(--text3);line-height:1.5;">月面与图鉴影像来自 NASA 公开数据，无需 key。填写 key 后解锁「每日天文图」与「高清星图」</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">月面与图鉴影像来自 NASA 公开数据，无需 key。填写 key 后解锁「每日天文图」与「高清星图」。</div>
       </div>
       <!-- 数据备份 -->
       <div style="width:100%;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
@@ -654,7 +655,7 @@
           <button class="login-btn" id="btnShareBackup" style="flex:1;padding:8px 10px;font-size:13px;">分享备份</button>
           <button class="login-btn" id="btnRestoreData" style="flex:1;padding:8px 10px;font-size:13px;">恢复数据</button>
         </div>
-        <div style="font-size:10px;color:var(--text3);line-height:1.5;">备份保存在手机「下载」目录，卸载应用也不会丢失；每天首次打开自动备份。分享备份可发到微信或邮箱留档</div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">备份保存在手机「下载」目录，卸载应用也不会丢失；每天首次打开自动备份。分享备份可发到微信或邮箱留档。</div>
       </div>
     </div>
   </div>
@@ -664,7 +665,7 @@
 <div class="overlay" id="onboardOverlay">
   <div class="modal" id="onboardModal" style="width:340px;max-width:90vw;text-align:center;">
     <div class="modal-head" style="justify-content:center;">
-      <span class="modal-title-text">欢迎来到 Day-Day</span>
+      <span class="modal-title-text">为你的星河命名</span>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:28px 24px;">
       <div class="profile-avatar-edit" id="onboardAvatar" onclick="$('onboardFileInput').click()" style="width:72px;height:72px;">
@@ -673,7 +674,7 @@
       <input type="file" id="onboardFileInput" accept="image/*" style="display:none;">
       <input class="login-input" type="text" id="onboardName" placeholder="你的观测者之名" style="text-align:center;font-size:16px;" maxlength="20">
       <div style="font-size:11px;color:var(--text3);line-height:1.6;max-width:260px;">
-        以星辰为伴，记录每一次观测<br>你的星河，由你命名
+        以星辰为伴，记录每一次观测。<br>你的星河，由你命名。
       </div>
       <button class="login-btn" id="btnOnboardDone" style="width:auto;padding:10px 40px;margin-top:4px;">开始观测</button>
     </div>

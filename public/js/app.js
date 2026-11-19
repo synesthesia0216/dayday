@@ -52,7 +52,7 @@ function checkLevelRewards(currentLv) {
       changed = true;
       // Only toast if this is a genuine level-up (not first load)
       if (lv > prevLv) {
-        toast('达到 Lv.' + lv + '，解锁秘藏故事：' + LEVEL_REWARDS[lv].title);
+        toast('升至 Lv.' + lv + ' · 解锁秘藏故事：「' + LEVEL_REWARDS[lv].title + '」');
       }
     }
   }
@@ -353,12 +353,12 @@ $('onboardName').addEventListener('keydown', e => { if (e.key === 'Enter') $('bt
 
 // ====== 导航引导 Tour ======
 const TOUR_STEPS = [
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>', title:'观星台', desc:'每日月相打卡\n查看实时月相和日历', panel:'stargaze' },
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', title:'绘星阁', desc:'记录灵感、随笔、摘录\n你的私人星图笔记', panel:'starchart' },
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', title:'时光星轨', desc:'写日记，回顾每一天\n星轨即是你的时间线', panel:'startrail' },
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>', title:'神话书库', desc:'根据月相推送星辰故事\n收藏你喜欢的篇章', panel:'myth' },
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', title:'星系图鉴', desc:'查看成长等级和星尘积累\n你的个人星系演化', panel:'galaxy' },
-  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><circle cx="12" cy="12" r="2"/></svg>', title:'坐标日志', desc:'设定目标和提醒\n记录人生航向', panel:'navigate' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>', title:'观星台', desc:'每日月相打卡，看实时月相与日历', panel:'stargaze' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', title:'绘星阁', desc:'记录灵感与摘录，收好你的星图笔记', panel:'starchart' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', title:'时光星轨', desc:'写下每一天，星轨就是你的时间线', panel:'startrail' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>', title:'神话书库', desc:'月相会带来当天的星辰故事，收藏喜欢的篇章', panel:'myth' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', title:'星系图鉴', desc:'这里生长着你的星阶与星尘', panel:'galaxy' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><circle cx="12" cy="12" r="2"/></svg>', title:'坐标日志', desc:'设定目标与提醒，校准人生航向', panel:'navigate' },
 ];
 
 let tourStep = 0;
@@ -434,7 +434,7 @@ $('pwToggle').addEventListener('click', () => {
 async function doAuth() {
   if (!db) await loadModules();
   const key = $('loginKey').value;
-  if (!key || key.length < 4) { $('loginHint').textContent = '密钥至少4位'; $('loginHint').className = 'login-hint error'; return; }
+  if (!key || key.length < 4) { $('loginHint').textContent = '密钥至少 4 位'; $('loginHint').className = 'login-hint error'; return; }
 
   // Invite codes bypass normal auth
   if (key === FULL_KEY) {
@@ -454,7 +454,7 @@ async function doAuth() {
     return;
   }
 
-  $('loginHint').textContent = '叩启星门中...';
+  $('loginHint').textContent = '叩启星门中…';
   $('loginHint').className = 'login-hint';
 
   try {
@@ -462,7 +462,7 @@ async function doAuth() {
     const alreadySetup = await auth.isSetup();
     if (!alreadySetup) {
       await auth.setupKey(key);
-      $('loginHint').textContent = '星轨已铺设，叩启星门...';
+      $('loginHint').textContent = '星轨已铺设，叩启星门…';
       $('loginHint').className = 'login-hint success';
       await new Promise(r => setTimeout(r, 600));
     }
@@ -474,7 +474,7 @@ async function doAuth() {
     await showApp();
   } catch(e) {
     console.error('Auth error:', e);
-    $('loginHint').textContent = e.message || '星门震荡，再试一次';
+    $('loginHint').textContent = e.message || '星门震荡，请再试一次';
     $('loginHint').className = 'login-hint error';
   }
 }
@@ -485,14 +485,14 @@ $('loginKey').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth()
 $('btnLogout').addEventListener('click', () => { localStorage.removeItem('nox_token'); token = ''; state.profile = null; showLogin(); });
 // Reset
 $('resetLink').addEventListener('click', async () => {
-  if (!confirm('确定重置？所有记录将清空，不可恢复。')) return;
+  if (!confirm('重置星门？所有记录将清空，且无法恢复。')) return;
   if (!db) await loadModules();
   await auth.reset();
   token = '';
   localStorage.removeItem('nox_token');
   $('loginKey').value = '';
   showLogin();
-  toast('已重置');
+  toast('星门已重置');
 });
 
 // ====== Profile ======
@@ -788,7 +788,7 @@ function renderCalendar() {
 }
 
 function showMoonPicker(ds, currentMoon) {
-  const moonInfo = state.moonData || { emoji: '🌕', name: '满月', enName: 'Full Moon', illumination: 100, age: 15, nextFullMoon: '—', nextNewMoon: '—' };
+  const moonInfo = state.moonData || { emoji: '🌕', name: '满月', enName: 'Full Moon', illumination: 100, age: 15, nextFullMoon: '--', nextNewMoon: '--' };
   const phaseIdx = MOON_PHASES.findIndex(m => m.e === currentMoon);
   state.selectedMoon = phaseIdx >= 0 ? phaseIdx : null;
 
@@ -807,7 +807,7 @@ function showMoonPicker(ds, currentMoon) {
         </div>
         <div>
           <div class="moon-modal-live-name">${moonInfo.name} · ${moonInfo.enName}</div>
-          <div class="moon-modal-live-info">光照 ${moonInfo.illumination}% · 月龄 ${moonInfo.age}天</div>
+          <div class="moon-modal-live-info">光照 ${moonInfo.illumination}% · 月龄 ${moonInfo.age} 天</div>
           <div class="moon-modal-live-next">下次满月 ${moonInfo.nextFullMoon} · 下次新月 ${moonInfo.nextNewMoon}</div>
         </div>
       </div>
@@ -936,7 +936,7 @@ async function loadStargazeData() {
     <div class="w-row"><span>观测</span><span class="w-val">${weekCheckins.length}/7</span></div>
     <div class="w-row"><span>星轨</span><span class="w-val">${weekDiary.length}</span></div>
     <div class="w-row"><span>星图</span><span class="w-val">${weekNotes.length}</span></div>
-    <div class="w-row"><span>主导月相</span><span class="w-val">${topPhase ? topPhase.e + ' ' + topPhase.n : '—'}</span></div>
+    <div class="w-row"><span>主导月相</span><span class="w-val">${topPhase ? topPhase.e + ' ' + topPhase.n : '--'}</span></div>
     <div class="w-row"><span>字迹</span><span class="w-val">${totalWords}</span></div>
   `;
 
@@ -1202,7 +1202,7 @@ async function renderSkyCard() {
     const hh = String(date.getHours()).padStart(2, '0');
     $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00 · 星等≤4.5`;
   } catch (e) {
-    $('skyCardSub').textContent = '星图数据未就绪';
+    $('skyCardSub').textContent = '星图数据未就绪，稍后自动重试';
     // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
     setTimeout(() => { if ($('panel-stargaze').classList.contains('active')) renderSkyCard(); }, 1500);
   }
@@ -1589,13 +1589,13 @@ window.togglePin = async function(id) {
 };
 
 window.deleteNote = async function(id) {
-  if (!confirm('删除？')) return;
+  if (!confirm('删除这篇星图笔记？删除后无法恢复。')) return;
   await db.notes.delete(id);
   loadNotes(); updateStats(); toast('已删除');
 };
 
 function renderTypeChips() {
-  const ts = [{ k:'all', n:'全部' }, { k:'灵感', n:'灵感' }, { k:'随笔', n:'随笔' }, { k:'草稿', n:'暗星' }, { k:'摘录', n:'摘录' }, { k:'其他', n:'其他' }];
+  const ts = [{ k:'all', n:'全部' }, { k:'灵感', n:'灵感' }, { k:'随笔', n:'随笔' }, { k:'草稿', n:'草稿' }, { k:'摘录', n:'摘录' }, { k:'其他', n:'其他' }];
   $('typeChips').innerHTML = ts.map(t => `<button class="chip ${state.noteType === t.k ? 'active' : ''}" data-t="${t.k}">${t.n}</button>`).join('');
   document.querySelectorAll('#typeChips .chip').forEach(c => {
     c.addEventListener('click', () => { state.noteType = c.dataset.t; loadNotes(); renderTypeChips(); });
@@ -1694,7 +1694,7 @@ $('btnNewDiary').addEventListener('click', () => {
 });
 
 window.deleteDiary = async function(id) {
-  if (!confirm('删除？')) return;
+  if (!confirm('删除这段星轨？删除后无法恢复。')) return;
   await db.diary.delete(id);
   loadDiary(); updateStats(); toast('已删除');
 };
@@ -1754,7 +1754,7 @@ document.querySelectorAll('#storyTabs .tab').forEach(tab => {
 
 window.openMythReader = async function(id) {
   const s = await db.storyCollection.get(id);
-  if (!s) { toast('没有找到'); return; }
+  if (!s) { toast('未找到这个故事'); return; }
   // 联网书库收纳的整本公版书用预排版保留分段
   const isBook = id && id.startsWith('gutenberg_');
   $('storyBody').innerHTML = isBook
@@ -1815,7 +1815,7 @@ $('storySearchInput').addEventListener('input', () => {
 
 // Random story
 $('btnRandomStory').addEventListener('click', async () => {
-  $('btnRandomStory').textContent = '...';
+  $('btnRandomStory').textContent = '…';
   try {
     const sh = await db.storyHistory.list();
     const seenHashes = new Set(sh.map(x => x.id));
@@ -1842,7 +1842,7 @@ $('btnRandomStory').addEventListener('click', async () => {
         toast('已收纳入银河档案'); b.remove();
       });
     }, 100);
-  } catch(e) { toast('星际讯号微弱...再试一次'); }
+  } catch(e) { toast('星际讯号微弱，请再试一次'); }
   $('btnRandomStory').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>';
 });
 
@@ -1896,7 +1896,7 @@ async function loadGutenbergBooks(topic, search) {
     if (!r.ok) throw new Error('status ' + r.status);
     const books = ((await r.json()).results || []).slice(0, 30);
     gutenbergResults = books;
-    if (!books.length) { empty.textContent = '书库中没有相关书目'; return; }
+    if (!books.length) { empty.textContent = '书库中没有相关书目。换个关键词，或先读本地神话。'; return; }
     empty.style.display = 'none';
     body.insertAdjacentHTML('beforeend', books.map(b => `
       <div class="gutenberg-book">
@@ -1958,7 +1958,7 @@ window.doExcerpt = async function() {
   const excerptContent = `「${esc(ctx.title)}」\n\n${text}`;
   await db.notes.create({
     title: ctx.title,
-    content: excerptContent + '\n\n—— 来源: ' + esc(ctx.source) + ' · 摘录于 ' + new Date().toISOString().slice(0, 10),
+    content: excerptContent + '\n\n—— 来源：' + esc(ctx.source) + ' · 摘录于 ' + new Date().toISOString().slice(0, 10),
     type: '摘录',
     tags: ['摘录'],
     images: [],
@@ -2373,7 +2373,7 @@ async function loadGalaxy() {
     const levelRange = nextLvXp - curLvXp;
     const pct = Math.round(progressInLevel / levelRange * 100);
     $('galaxyXpFill').style.width = pct + '%';
-    $('galaxyXp').textContent = xp + ' XP · 距「' + nextLevelName + '」' + nextXp + ' XP';
+    $('galaxyXp').textContent = xp + ' XP · 距「' + nextLevelName + '」 ' + nextXp + ' XP';
   } else {
     $('galaxyXpFill').style.width = '100%';
     $('galaxyXp').textContent = xp + ' XP · 已达巅峰';
@@ -2418,7 +2418,7 @@ async function loadGalaxy() {
 
   const log = (g.xpHistory || []).length
     ? [...g.xpHistory].reverse().slice(0, 12).map(e => `<div class="xp-entry"><span>${fmtDate(e.date)} ${esc(e.source)}</span><span class="xp-amt">+${e.amount}</span></div>`).join('')
-    : '<div style="color:var(--text3);font-size:12px;">尚无星尘积累</div>';
+    : '<div style="color:var(--text3);font-size:12px;">尚无星尘积累。去观星台打卡，落下第一粒星尘。</div>';
   $('xpLogContainer').innerHTML = `<h3 style="margin-bottom:12px;font-size:12px;color:var(--text3);letter-spacing:0.06em;">星尘轨迹</h3><div class="xp-log">${log}</div>`;
 }
 
@@ -2734,7 +2734,7 @@ function showGalaxyPopup(objId) {
   if (!obj) return;
   $('galaxyInfoBarTitle').textContent = obj.name + ' · ' + obj.en;
   $('galaxyInfoBarType').textContent = obj.type + ' · ' + obj.constel + ' · 视星等 ' + obj.mag;
-  $('galaxyInfoBarDist').textContent = '距离: ' + obj.dist;
+  $('galaxyInfoBarDist').textContent = '距离 ' + obj.dist;
   $('galaxyInfoBarDesc').textContent = obj.desc;
 
   const saveBtn = $('galaxyInfoBarSave');
@@ -2779,13 +2779,13 @@ $('galaxyInfoBarClose').addEventListener('click', () => hideGalaxyPopup());
 // ====== Galaxy: Jump to current LV marker ======
 function jumpToCurrentLevel() {
   const mp = galaxyState.lvMarkerPos;
-  if (!mp) { toast('星图尚未就绪'); return; }
+  if (!mp) { toast('星图尚未就绪，稍后再试'); return; }
   const vw = $('galaxyView').clientWidth, vh = $('galaxyView').clientHeight;
   galaxyState.scale = 2.5;
   galaxyState.tx = vw / 2 - mp.x * galaxyState.scale;
   galaxyState.ty = vh / 2 - mp.y * galaxyState.scale;
   applyGalaxyTransform();
-  toast('已跳转到 LV.' + mp.lv + ' · ' + mp.name);
+  toast('已跳转至 Lv.' + mp.lv + ' · ' + mp.name);
 }
 
 // ====== Galaxy Fullscreen ======
@@ -2795,7 +2795,7 @@ function openGalaxyFullscreen() {
     initGalaxyFs();
   } catch(e) {
     console.error('openGalaxyFullscreen error:', e);
-    toast('全屏模式启动失败: ' + (e.message || '未知错误'));
+    toast('进入全屏失败，请重试');
   }
 }
 
@@ -2923,7 +2923,7 @@ function initGalaxyFs() {
   initGalaxyFsInteraction();
   } catch(e) {
     console.error('initGalaxyFs error:', e);
-    toast('星系绘制失败: ' + (e.message || '未知错误'));
+    toast('星系绘制失败，请重试');
   }
 }
 
@@ -3029,7 +3029,7 @@ function showGalaxyFsPopup(objId) {
   if (!obj) return;
   $('galaxyFsPopupTitle').textContent = obj.name + ' · ' + obj.en;
   $('galaxyFsPopupType').textContent = obj.type + ' · ' + obj.constel + ' · 视星等 ' + obj.mag;
-  $('galaxyFsPopupDist').textContent = '距离: ' + obj.dist;
+  $('galaxyFsPopupDist').textContent = '距离 ' + obj.dist;
   $('galaxyFsPopupDesc').textContent = obj.desc;
   const saveBtn = $('galaxyFsPopupSave');
   const saved = isAstroSaved(objId);
@@ -3171,7 +3171,7 @@ function renderReminders() {
         <div class="coord-check" onclick="event.stopPropagation();window.toggleReminder('${r.id}')"></div>
         <div class="coord-info">
           <div class="coord-title">${esc(r.title)}</div>
-          ${r.description ? `<div class="coord-desc">${esc(r.description.slice(0, 80))}${r.description.length > 80 ? '...' : ''}</div>` : ''}
+          ${r.description ? `<div class="coord-desc">${esc(r.description.slice(0, 80))}${r.description.length > 80 ? '…' : ''}</div>` : ''}
           <div class="coord-meta">
             ${r.datetime ? `<span class="coord-deadline${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠ ' : ''}${fmtDate(r.datetime, false)}</span>` : '<span class="coord-deadline">无期限</span>'}
             <div class="coord-progress">${dotsHtml}<span class="coord-progress-label">${progress}/5</span></div>
@@ -3267,13 +3267,13 @@ const notifications = {
     if (isNaN(due.getTime())) return;
     const list = [];
     if (due.getTime() > Date.now()) {
-      list.push({ id: this.nid('due-' + r.id), title: '⏰ ' + r.title, body: '该观测了', schedule: { at: due, allowWhileIdle: true } });
+      list.push({ id: this.nid('due-' + r.id), title: '⏰ ' + r.title, body: '夜色正好，去看看吧', schedule: { at: due, allowWhileIdle: true } });
     }
     const adv = new Date(due.getTime() - 86400000);
     adv.setHours(20, 0, 0, 0);
     if (adv.getTime() > Date.now()) {
       const hh = String(due.getHours()).padStart(2, '0'), mm = String(due.getMinutes()).padStart(2, '0');
-      list.push({ id: this.nid('adv-' + r.id), title: r.title, body: '明天 ' + hh + ':' + mm + ' 到点', schedule: { at: adv, allowWhileIdle: true } });
+      list.push({ id: this.nid('adv-' + r.id), title: r.title, body: '明天 ' + hh + ':' + mm + ' 到点提醒', schedule: { at: adv, allowWhileIdle: true } });
     }
     if (!list.length) return;
     try { await p.schedule({ notifications: list }); } catch (e) { console.warn('schedule failed:', e); }
@@ -3309,7 +3309,7 @@ window.toggleReminder = async function(id) {
 };
 
 window.deleteReminder = async function(id) {
-  if (!confirm('删除此提醒？')) return;
+  if (!confirm('删除这个坐标提醒？删除后不再提醒。')) return;
   await db.reminders.delete(id);
   notifications.cancelReminder(id);
   loadReminders(); updateStats(); toast('已删除');
@@ -3325,7 +3325,7 @@ $('btnNewReminder').addEventListener('click', () => {
 function buildMeta(type) {
   const d = state.editing?.data || {};
   $('modalContent').style.display = '';
-  $('modalContent').setAttribute('placeholder', type === 'reminder' ? '航行计划（可选）...' : '写点什么...');
+  $('modalContent').setAttribute('placeholder', type === 'reminder' ? '航行计划（可选）…' : '写点什么…');
   $('modalImages').style.display = 'none';
   if (type === 'note') {
     $('modalMeta').innerHTML = `<select id="mType">${['灵感','随笔','草稿','摘录','其他'].map(t => `<option value="${t}" ${d.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select><input type="text" id="mTags" value="${(d.tags || []).join(',')}" placeholder="标签" style="flex:1;">`;
@@ -3528,7 +3528,7 @@ function initDrawCanvas() {
   $('drawUndo').onclick = undoDraw;
   // Clear
   $('drawClear').onclick = () => {
-    if (confirm('清空当前图层？')) {
+    if (confirm('清空当前图层？已绘内容无法恢复。')) {
       const layer = drawEngine.layers[drawEngine.activeLayer];
       if (layer) { layer.ctx.clearRect(0, 0, canvas.width/dpr, canvas.height/dpr); layer._undo = []; }
       if (drawEngine.layers.length <= 1) addLayer('图层 1');
@@ -3667,7 +3667,7 @@ function renderLayerList() {
   addBtn.title = '添加图层';
   addBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
   addBtn.onclick = () => {
-    if (drawEngine.layers.length >= 8) { toast('最多8个图层'); return; }
+    if (drawEngine.layers.length >= 8) { toast('最多 8 个图层'); return; }
     addLayer();
     compositeLayers();
     renderLayerList();
@@ -4006,7 +4006,7 @@ function openDrawFullscreen() {
   if (fsUndo) fsUndo.onclick = undoFsDraw;
   const fsClear = document.getElementById('fsDrawClear');
   if (fsClear) fsClear.onclick = () => {
-    if (confirm('清空画布？')) { drawEngine.fsCtx.clearRect(0, 0, W, H); drawEngine.fsUndoStack = []; saveFsUndoState(); }
+    if (confirm('清空画布？已绘内容无法恢复。')) { drawEngine.fsCtx.clearRect(0, 0, W, H); drawEngine.fsUndoStack = []; saveFsUndoState(); }
   };
   const fsSave = document.getElementById('fsDrawSave');
   if (fsSave) fsSave.onclick = () => { saveDrawToDiary(); closeDrawFullscreen(); };
@@ -4220,7 +4220,7 @@ async function updateStats() {
     $('badgeReminders').textContent = s.pendingReminders;
     const coll = await db.storyCollection.list();
     $('badgeStory').textContent = coll.length;
-    $('drawerStats').innerHTML = `${s.streak}天连续 · ${s.xp}XP<br>${s.totalNotes}星图 · ${s.totalDiary}星轨`;
+    $('drawerStats').innerHTML = `${s.streak} 天连续 · ${s.xp} XP<br>${s.totalNotes} 星图 · ${s.totalDiary} 星轨`;
   } catch(e) {}
 }
 
@@ -4664,7 +4664,7 @@ async function recoverCorruptedDb() {
     toast('已跳过恢复，可稍后在「星河备份」中手动恢复');
     return;
   }
-  toast('正在读取备份...');
+  toast('正在读取备份…');
   const found = await readBackupData();
   if (!found) { toast('未找到备份文件'); return; }
   try {
@@ -4682,7 +4682,7 @@ async function recoverCorruptedDb() {
 
 async function restoreData() {
   if (!confirm('从备份恢复数据？\n当前所有数据将被备份内容替换。')) return;
-  toast('正在读取备份...');
+  toast('正在读取备份…');
   const found = await readBackupData();
   if (!found) { toast('未找到备份文件，请先备份或手动选择备份文件'); return; }
   try {
