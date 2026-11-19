@@ -21,15 +21,28 @@ const MOON_PHASES = [
   { id:'first_q',      e:'🌓', n:'上弦月', mood:'calm' },
 ];
 
-// 等级曲线：几何级数 ×~2.1，与真实观测里程碑挂钩（参考 Astrophy / TA.Starquest 的等级设计）
+// 等级曲线：1-7 几何级数 ×~2，8-20 ×~1.3；从肉眼观测一路走到宇宙学（参考 Astrophy / TA.Starquest 的等级设计）
 const LEVELS = [
-  { lv:1, name:'肉眼观测者',   xp:0 },
-  { lv:2, name:'寻星学徒',     xp:80 },
-  { lv:3, name:'双筒镜手',     xp:180 },
-  { lv:4, name:'星座绘师',     xp:400 },
-  { lv:5, name:'梅西耶猎手',   xp:800 },
-  { lv:6, name:'深空探索者',   xp:1600 },
-  { lv:7, name:'织光者',       xp:3200 },
+  { lv:1,  name:'肉眼观测者',   xp:0 },
+  { lv:2,  name:'寻星学徒',     xp:80 },
+  { lv:3,  name:'双筒镜手',     xp:180 },
+  { lv:4,  name:'星座绘师',     xp:400 },
+  { lv:5,  name:'梅西耶猎手',   xp:800 },
+  { lv:6,  name:'深空探索者',   xp:1600 },
+  { lv:7,  name:'织光者',       xp:3200 },
+  { lv:8,  name:'变星观测者',   xp:4500 },
+  { lv:9,  name:'彗星巡天者',   xp:6200 },
+  { lv:10, name:'光谱解读者',   xp:8400 },
+  { lv:11, name:'视差测量者',   xp:11200 },
+  { lv:12, name:'标准烛光',     xp:14800 },
+  { lv:13, name:'银河巡天者',   xp:19500 },
+  { lv:14, name:'红移观测者',   xp:25500 },
+  { lv:15, name:'引力透镜',     xp:33000 },
+  { lv:16, name:'回响聆听者',   xp:42500 },
+  { lv:17, name:'暗物质追寻者', xp:54500 },
+  { lv:18, name:'时间回溯者',   xp:69500 },
+  { lv:19, name:'奇点守望者',   xp:88000 },
+  { lv:20, name:'第一缕光',     xp:110000 },
 ];
 
 // Hidden reward stories unlocked at each level
@@ -40,6 +53,19 @@ const LEVEL_REWARDS = {
   5: { title:'深空天体的低语', content:'在肉眼可见的最暗夜空之外，隐藏着数以千计的星云、星团和星系。M31仙女座星系的光走了254万年才抵达你的眼睛——你看到的，是它254万年前的样子。恒星在星云中诞生，又在超新星爆发中归还元素。我们的身体由星尘构成：血液中的铁来自远古超新星，骨骼中的钙诞生于白矮星的熔炉。观测深空，不过是在回望自己的起源。探索者，你已拥有看见这些的眼睛。', source:'星门秘藏 · Lv.5解锁' },
   6: { title:'暗物质猎人的手记', content:'我们能看到的物质——恒星、行星、星云——只占宇宙总质量的5%。剩下95%是暗物质和暗能量，它们不与光相互作用，却用引力塑造了星系的结构。就像记忆中那些不曾记录却深刻影响人生的瞬间：它们不发光，但牵引着一切。兹威基在1933年发现后发座星系团运动异常，首次预言了暗物质的存在。看不见的，往往是最强大的。猎手，去追踪那些不可见的力量吧。', source:'星门秘藏 · Lv.6解锁' },
   7: { title:'织光者的最终观测', content:'你已走过了从肉眼到暗物质的全部旅程。现在回头望去，每一次打卡记录、每一篇摘录、每一段星轨，都像是宇宙大爆炸后散布的光子——它们各自独立飞行，却共同讲述着一个故事。卡尔·萨根说："我们是由星尘组成的。"但更准确地说，我们是宇宙认识自己的一种方式。你记录的不是数据，而是一个星系中短暂而灿烂的意识火花。织光者，继续观测吧——因为观看本身，就是在编织光。', source:'星门秘藏 · Lv.7解锁' },
+  8: { title:'明暗之间', content:'大多数恒星的光芒终年不变，但有些星会在几小时到几百天里明暗起伏。造父变星的光变周期与真实亮度严格挂钩——它因此成了丈量宇宙距离的标尺。一个多世纪以来，AAVSO 积累的数千万条业余目视估计，至今仍被专业研究引用。观测者，你今夜记下的那个星等数字，也许会在某篇论文的表格里，被一百年后的人读到。', source:'星门秘藏 · Lv.8解锁' },
+  9: { title:'冰冻的旅行者', content:'彗星是太阳系最古老的旅行者，携带着四十六亿年前的冰与尘埃。彗发与彗尾，是被太阳风一点一点吹散的过去。池谷-关、海尔-波普、百武——历史上许多明亮的彗星，都是先被业余巡天者的望远镜捕获。你的每一次对空扫描，都可能是与一颗沉睡亿万年的冰球签下的第一面之约。', source:'星门秘藏 · Lv.9解锁' },
+  10: { title:'星光之指纹', content:'把星光摊开成一条光谱，你会看见无数条暗线——那是遥远恒星大气里的元素留下的签名。氢、钙、铁、钛，每一种元素都在自己的波长上画下一道。光谱是恒星的指纹，也是它的温度计与病历。透过棱镜，星光不再只是亮，它开始说话。读谱者，去听每一颗星的自述。', source:'星门秘藏 · Lv.10解锁' },
+  11: { title:'毫角秒的跳动', content:'地球绕太阳公转，近处的恒星会在遥远背景前微微摆动。1838 年，贝塞尔用相隔半年的两次测量，首次量出天鹅座 61 的距离：约十一光年。视差只是毫角秒量级的位移，却是宇宙测距的第一级台阶。其实你的双眼就是天然的视差仪——闭上左眼、再闭上右眼，指尖的跳动，正是宇宙测量学的起点。', source:'星门秘藏 · Lv.11解锁' },
+  12: { title:'一支烛火的距离', content:'1912 年，勒维特在小麦哲伦云中研究造父变星时发现：光变周期越长的星，本身越亮。这个朴素的规律，让天文学家第一次能把"看起来多亮"换算成"实际有多远"。标准烛光由此而来——只要认出一支烛火的真实亮度，再远的距离都能被推算。宇宙的深邃，第一次变成了可以计算的数字。', source:'星门秘藏 · Lv.12解锁' },
+  13: { title:'光带里的坐标', content:'我们所在的银河系，是一个直径约十万光年的旋涡星系，太阳不过是猎户臂内侧的一粒星。银盘之上，两千亿颗恒星缓缓绕转，银心方向还藏着一个四百万倍太阳质量的巨兽。你在夜空里看见的那条朦胧光带，就是银盘切面投来的无数星光。巡天，就是给这条光带里的每一处，都写上坐标。', source:'星门秘藏 · Lv.13解锁' },
+  14: { title:'宇宙的里程表', content:'1929 年，哈勃发现远方星系的光谱线整体向红端偏移，而且越远的星系跑得越快。宇宙不在静止，它在膨胀。红移量从此成了宇宙的里程表：一个天体的红移值，直接写出它离我们有多远、它的光走了多久。你看到的每一抹偏红的天光，都是一份宇宙膨胀的测速单。', source:'星门秘藏 · Lv.14解锁' },
+  15: { title:'时空的签名', content:'质量会弯曲光线。1919 年的日食，爱丁顿拍下了太阳边缘偏移的星光，证实了广义相对论的预言。此后，星系团成了宇宙中最宏伟的透镜——背景星系的光被拉成弧、弯成环。引力透镜让不可见之物现形，也让极远之物变得可见。你凝视的每一道弧光，都是时空弯曲的签名。', source:'星门秘藏 · Lv.15解锁' },
+  16: { title:'时间的回声', content:'1965 年，彭齐亚斯与威尔逊在清理天线噪声时，撞见了一种来自全天所有方向的微波——那是宇宙大爆炸后三十八万年留下的余晖，光子飞行了一百三十八亿年才抵达这里。宇宙微波背景是宇宙的婴儿照片，也是它的回声。调低噪声，仔细去听，你会听见时间的起点。', source:'星门秘藏 · Lv.16解锁' },
+  17: { title:'暗面的引力', content:'星系转得太快，按可见物质计算它们早该散架，却始终没有。薇拉·鲁宾的旋转曲线表明：一定有大量不发光的物质在提供引力。宇宙质量的八成以上藏在暗处——它不发光、不反射，却撑起了每一座星系的骨架。追寻者，你要追踪的不是光，而是光的缺席。', source:'星门秘藏 · Lv.17解锁' },
+  18: { title:'望向过去', content:'光速有限。你看见的月亮是一秒前的月亮，太阳是八分钟前的太阳，仙女座星系是二百五十四万年前的它。望远镜是时间机器：望向越远的地方，就望向越早的过去。哈勃深场里那些微弱的红色光斑，是百亿年前的婴儿星系。观测者的每一次抬头，都是一次时间的回溯。', source:'星门秘藏 · Lv.18解锁' },
+  19: { title:'视界之外', content:'质量足够大、体积足够小时，时空会塌缩成一个连光都无法逃离的奇点。事件视界之内，一切因果被斩断。2019 年，事件视界望远镜拍下了第一张黑洞照片——M87 中心那圈橙色的光环，是全人类第一次"看见"一个不可见之物。站在视界之外守望，是我们与深渊之间安全的距离。', source:'星门秘藏 · Lv.19解锁' },
+  20: { title:'初光', content:'每一台新望远镜落成，天文学家都会等待"初光"——它第一次睁眼望向宇宙的时刻。宇宙也曾有过自己的第一缕光：大爆炸三十八万年后，宇宙冷却到让光子自由穿行，黑暗终结，光明诞生。你已经走完了从肉眼到视界的全部旅程。此刻的你，就是自己宇宙的初光。', source:'星门秘藏 · Lv.20解锁' },
 };
 
 function checkLevelRewards(currentLv) {
@@ -70,6 +96,12 @@ function getUnlockedStories() {
   const rewards = getUnlockedRewards();
   return rewards.map(lv => ({ id: 'reward_lv' + lv, ...LEVEL_REWARDS[lv] })).filter(Boolean);
 }
+// 等级螺旋布局：约两圈旋臂，20 级沿臂排布（普通图鉴与全屏图共用）
+function lvSpiralPos(i, spreadR) {
+  const angle = -Math.PI / 2 + i * 0.65;
+  const dist = spreadR * (0.25 + i * 0.04);
+  return { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
+}
 
 // ====== 星尘勋章（成就系统，真实观测行为驱动） ======
 const ACHIEVEMENTS = [
@@ -81,6 +113,8 @@ const ACHIEVEMENTS = [
   { id:'messier_5',   name:'深空初探', desc:'观测 5 个梅西耶天体' },
   { id:'streak_7',    name:'七日连观', desc:'连续观测 7 天' },
   { id:'level_5',     name:'猎手之名', desc:'达到 Lv.5 梅西耶猎手' },
+  { id:'level_10',    name:'光之指纹', desc:'达到 Lv.10 光谱解读者' },
+  { id:'level_20',    name:'宇宙初光', desc:'达到 Lv.20 第一缕光' },
 ];
 let unlockedAch = [];
 async function refreshAchievements() {
@@ -137,6 +171,8 @@ async function checkAchievements() {
     ['messier_5', (d.messier || []).length >= 5],
     ['streak_7', (state.streak || 0) >= 7],
     ['level_5', li.lv >= 5],
+    ['level_10', li.lv >= 10],
+    ['level_20', li.lv >= 20],
   ];
   for (const [id, ok] of checks) if (ok) await unlockAchievement(id);
 }
@@ -2565,13 +2601,11 @@ function placeAstroMarkers() {
   const curLv = galaxyGrowth?.level || 1;
   const lcx = W * 0.48, lcy = H * 0.50;
   const spreadR = Math.min(W, H) * 0.18;
-  const spiralAngle = 0.65;
 
   levels.forEach((lv, i) => {
-    const angle = -Math.PI / 2 + i * spiralAngle;
-    const dist = spreadR * (0.25 + i * 0.12);
-    const px = (lcx + Math.cos(angle) * dist).toFixed(0);
-    const py = (lcy + Math.sin(angle) * dist).toFixed(0);
+    const pos = lvSpiralPos(i, spreadR);
+    const px = (lcx + pos.x).toFixed(0);
+    const py = (lcy + pos.y).toFixed(0);
     const isUnlocked = lv.lv <= curLv;
     const isCurrent = lv.lv === curLv;
     const cls = isCurrent ? ' active' : (isUnlocked ? '' : ' locked');
@@ -2584,15 +2618,11 @@ function placeAstroMarkers() {
       </div>`;
   });
 
-  // Level connector lines (SVG path that connects the level markers in a growing spiral)
-  let linePath = '';
+  // Level connector lines (SVG path connecting level markers along the spiral)
   const lvPositions = [];
   LEVELS.forEach((lv, i) => {
-    const angle = -Math.PI / 2 + i * spiralAngle;
-    const dist = spreadR * (0.25 + i * 0.12);
-    const px = lcx + Math.cos(angle) * dist;
-    const py = lcy + Math.sin(angle) * dist;
-    lvPositions.push({ x: px, y: py, unlocked: lv.lv <= curLv });
+    const pos = lvSpiralPos(i, spreadR);
+    lvPositions.push({ x: lcx + pos.x, y: lcy + pos.y, unlocked: lv.lv <= curLv });
   });
   // Draw lines between each consecutive pair
   let pathD = '';
@@ -2881,12 +2911,10 @@ function initGalaxyFs() {
   const curLv = galaxyGrowth?.level || 1;
   const lcx = spaceW * 0.48, lcy = spaceH * 0.50;
   const spreadR = Math.min(spaceW, spaceH) * 0.18;
-  const spiralAngle = 0.65;
   const lvPositions = [];
   LEVELS.forEach((lv, i) => {
-    const angle = -Math.PI/2 + i*spiralAngle;
-    const dist = spreadR*(0.25 + i*0.12);
-    const px = (lcx + Math.cos(angle)*dist).toFixed(0), py = (lcy + Math.sin(angle)*dist).toFixed(0);
+    const pos = lvSpiralPos(i, spreadR);
+    const px = (lcx + pos.x).toFixed(0), py = (lcy + pos.y).toFixed(0);
     lvPositions.push({ x: parseFloat(px), y: parseFloat(py), unlocked: lv.lv <= curLv });
     const isUnlocked = lv.lv <= curLv, isCurrent = lv.lv === curLv;
     const cls = isCurrent ? ' active' : (isUnlocked ? '' : ' locked');

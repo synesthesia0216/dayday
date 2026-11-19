@@ -69,7 +69,7 @@ await assert('初见月面成就解锁', `(${G}.then(async g => (await g.get()).
 await ev(`goPanel('galaxy')`);
 await sleep(1500);
 await assert('勋章墙标题存在', `document.querySelector('.achievements-title') && document.querySelector('.achievements-title').textContent.includes('星尘勋章')`);
-await assert('勋章墙渲染 8 枚', `document.getElementById('achievementsGrid').children.length === 8`);
+await assert('勋章墙渲染 10 枚', `document.getElementById('achievementsGrid').children.length === 10`);
 await assert('已有勋章点亮(≥1)', `document.querySelectorAll('.ach-badge.on').length >= 1`);
 await shot('growth-badges.png');
 
@@ -114,8 +114,8 @@ await shot('growth-sky-lit.png');
 await ev(`document.getElementById('skyFsClose').click()`);
 await sleep(400);
 
-// 5. 新等级曲线：注入 XP 至 3200 → Lv.7 织光者 + 猎手之名成就
-await ev(`(${G}.then(async g => { const x = await g.get(); if ((x.xp||0) < 3200) await g.addXP(3200 - (x.xp||0), '测试注入'); return true; }))`);
+// 5. 新等级曲线：注入 XP 至 3200 → Lv.7 织光者 + 猎手之名成就（若被其他套件污染高于 3200 先钳回，保证套件顺序无关）
+await ev(`(${G}.then(async g => { const x = await g.get(); if ((x.xp||0) < 3200) await g.addXP(3200 - (x.xp||0), '测试注入'); else if ((x.xp||0) > 3200) await g.setMeta({ xp: 3200 }); return true; }))`);
 await ev(`goPanel('galaxy')`);
 await sleep(1800);
 await assert('等级显示 Lv.7 织光者', `document.getElementById('galaxyLevel').textContent.includes('织光者')`);
