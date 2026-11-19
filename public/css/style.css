@@ -763,6 +763,9 @@ button{cursor:pointer;font-family:inherit}
 .galaxy-marker.level-marker .galaxy-marker-label{
   font-size:9px;color:var(--text3);left:10px;top:-10px;
 }
+.galaxy-marker.level-marker .galaxy-marker-label.galaxy-marker-label-right{
+  left:auto;right:10px;text-align:right;
+}
 .galaxy-marker.level-marker.active .galaxy-marker-label{
   color:var(--gold);opacity:1;
 }

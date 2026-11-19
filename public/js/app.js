@@ -96,11 +96,11 @@ function getUnlockedStories() {
   const rewards = getUnlockedRewards();
   return rewards.map(lv => ({ id: 'reward_lv' + lv, ...LEVEL_REWARDS[lv] })).filter(Boolean);
 }
-// 等级螺旋布局：约两圈旋臂，20 级沿臂排布（普通图鉴与全屏图共用）
+// 等级螺旋布局：约 1.8 圈旋臂，20 级沿臂排布（普通图鉴与全屏图共用）
 function lvSpiralPos(i, spreadR) {
-  const angle = -Math.PI / 2 + i * 0.65;
-  const dist = spreadR * (0.25 + i * 0.04);
-  return { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
+  const angle = -Math.PI / 2 + i * 0.6;
+  const dist = spreadR * (0.32 + i * 0.037);
+  return { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, angle };
 }
 
 // ====== 星尘勋章（成就系统，真实观测行为驱动） ======
@@ -136,7 +136,7 @@ function renderAchievements() {
   if (!el) return;
   el.innerHTML = ACHIEVEMENTS.map(a => {
     const on = unlockedAch.includes(a.id);
-    return `<div class="ach-badge${on ? ' on' : ''}" title="${esc(a.desc)}"><span class="ach-star">✦</span><span class="ach-name">${esc(a.name)}</span></div>`;
+    return `<div class="ach-badge${on ? ' on' : ''}" title="${esc(a.desc)}"><svg class="ach-star" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg><span class="ach-name">${esc(a.name)}</span></div>`;
   }).join('');
 }
 async function xpOnce(key, amount, source) {
@@ -2600,12 +2600,13 @@ function placeAstroMarkers() {
   const levels = LEVELS;
   const curLv = galaxyGrowth?.level || 1;
   const lcx = W * 0.48, lcy = H * 0.50;
-  const spreadR = Math.min(W, H) * 0.18;
+  const spreadR = Math.min(W, H) * 0.30;
 
   levels.forEach((lv, i) => {
     const pos = lvSpiralPos(i, spreadR);
     const px = (lcx + pos.x).toFixed(0);
     const py = (lcy + pos.y).toFixed(0);
+    const labelRight = i === 0 || Math.cos(pos.angle) < 0;
     const isUnlocked = lv.lv <= curLv;
     const isCurrent = lv.lv === curLv;
     const cls = isCurrent ? ' active' : (isUnlocked ? '' : ' locked');
@@ -2614,7 +2615,7 @@ function placeAstroMarkers() {
     html += `
       <div class="galaxy-marker level-marker${cls}" data-level="${lv.lv}" style="left:${px}px;top:${py}px;">
         <div class="galaxy-marker-dot"></div>
-        <span class="galaxy-marker-label">${lv.name} · Lv.${lv.lv}</span>
+        <span class="galaxy-marker-label${labelRight ? ' galaxy-marker-label-right' : ''}">${lv.name} · Lv.${lv.lv}</span>
       </div>`;
   });
 
@@ -2910,7 +2911,7 @@ function initGalaxyFs() {
   // Level markers
   const curLv = galaxyGrowth?.level || 1;
   const lcx = spaceW * 0.48, lcy = spaceH * 0.50;
-  const spreadR = Math.min(spaceW, spaceH) * 0.18;
+  const spreadR = Math.min(spaceW, spaceH) * 0.30;
   const lvPositions = [];
   LEVELS.forEach((lv, i) => {
     const pos = lvSpiralPos(i, spreadR);
@@ -2918,7 +2919,8 @@ function initGalaxyFs() {
     lvPositions.push({ x: parseFloat(px), y: parseFloat(py), unlocked: lv.lv <= curLv });
     const isUnlocked = lv.lv <= curLv, isCurrent = lv.lv === curLv;
     const cls = isCurrent ? ' active' : (isUnlocked ? '' : ' locked');
-    html += `<div class="galaxy-marker level-marker${cls}" data-level="${lv.lv}" style="left:${px}px;top:${py}px;"><div class="galaxy-marker-dot"></div><span class="galaxy-marker-label">${lv.name} · Lv.${lv.lv}</span></div>`;
+    const labelRight = Math.cos(pos.angle) < 0;
+    html += `<div class="galaxy-marker level-marker${cls}" data-level="${lv.lv}" style="left:${px}px;top:${py}px;"><div class="galaxy-marker-dot"></div><span class="galaxy-marker-label${labelRight ? ' galaxy-marker-label-right' : ''}">${lv.name} · Lv.${lv.lv}</span></div>`;
   });
   // Level connector lines
   let pathD = '';
