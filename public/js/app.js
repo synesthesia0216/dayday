@@ -298,18 +298,13 @@ async function playEyeIntro() {
   if (!el || eyeIntroPlayed) return;
   eyeIntroPlayed = true;
   el.style.display = 'flex';
-  try {
-    const m3 = await import('../client/moon-3d.js');
-    await m3.default.renderMoon(document.getElementById('eiMoon'), { phase: 0.5 }, 190);
-    await m3.default.renderMoon(document.getElementById('eiMoonMini'), { phase: 0.5 }, 160);
-  } catch (e) { /* 月面渲染失败不阻断动画，画布留空 */ }
   el.classList.remove('p2', 'p3', 'gone');
   void el.offsetWidth;
   el.classList.add('eye-open');
-  setTimeout(() => el.classList.add('p2'), 3400); // 环视 2 圈结束（.6+2×1.2s）
-  setTimeout(() => el.classList.add('p3'), 4300);
-  setTimeout(() => el.classList.add('gone'), 6300);
-  setTimeout(() => { el.style.display = 'none'; }, 6900);
+  setTimeout(() => el.classList.add('p2'), 4700); // 环视 2 圈结束（.6+2×2s）
+  setTimeout(() => el.classList.add('p3'), 5500);
+  setTimeout(() => el.classList.add('gone'), 7700);
+  setTimeout(() => { el.style.display = 'none'; }, 8300);
   el.addEventListener('click', () => { el.style.display = 'none'; }, { once: true });
 }
 

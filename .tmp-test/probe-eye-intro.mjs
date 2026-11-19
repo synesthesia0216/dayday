@@ -1,4 +1,4 @@
-// 验证开屏动画时间轴：无 token → 眼睛出现→化月→淡出→登录屏；有 token → 不播动画
+// 验证开屏动画时间轴：无 token → 眼睛慢速环视→隐去→DAY-DAY 文字浮现→淡出→登录屏；有 token → 不播动画
 const CDP = 'http://127.0.0.1:9222';
 let targets = await (await fetch(`${CDP}/json/list`)).json();
 let page = targets.find(t => t.type === 'page');
@@ -33,25 +33,27 @@ console.log('t=1.2s eye stage:', await evalJs(`(() => {
     loginVisible: !!document.getElementById('loginScreen') && getComputedStyle(document.getElementById('loginScreen')).display !== 'none'
   });
 })()`));
-await sleep(2500); // t≈3.7s：瞳孔淡去、虹膜现月
-console.log('t=3.7s morph stage:', await evalJs(`(() => {
+await sleep(2900); // t≈4.1s：眼睛仍在慢速环视（2s×2 圈，尚未隐去）
+console.log('t=4.1s orbit stage:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     p2: el && el.classList.contains('p2'),
-    miniOpaque: (() => { const m = document.getElementById('eiMoonMini'); return m && getComputedStyle(m).opacity; })(),
+    socketStill: (() => { const s = document.querySelector('.ei-socket'); return s && getComputedStyle(s).opacity; })(),
+    textHidden: (() => { const t = document.querySelector('.ei-text'); return t && getComputedStyle(t).opacity; })()
+  });
+})()`));
+await sleep(1500); // t≈5.6s：眼睛隐去，DAY-DAY 文字浮现
+console.log('t=5.6s text stage:', await evalJs(`(() => {
+  const el = document.getElementById('eyeIntro');
+  return JSON.stringify({
+    p2: el && el.classList.contains('p2'),
+    p3: el && el.classList.contains('p3'),
+    textOpaque: (() => { const t = document.querySelector('.ei-text'); return t && getComputedStyle(t).opacity; })(),
     pupilGone: (() => { const p = document.querySelector('.ei-pupil'); return p && getComputedStyle(p).opacity; })()
   });
 })()`));
-await sleep(1200); // t≈4.9s：放大为满月图标
-console.log('t=4.9s moon stage:', await evalJs(`(() => {
-  const el = document.getElementById('eyeIntro');
-  return JSON.stringify({
-    p3: el && el.classList.contains('p3'),
-    moonOpaque: (() => { const m = document.getElementById('eiMoon'); return m && getComputedStyle(m).opacity; })()
-  });
-})()`));
-await sleep(2400); // t≈7.3s：动画结束
-console.log('t=7.3s after anim:', await evalJs(`(() => {
+await sleep(3000); // t≈8.6s：动画结束
+console.log('t=8.6s after anim:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     hidden: !el || el.style.display === 'none' || el.classList.contains('gone'),
