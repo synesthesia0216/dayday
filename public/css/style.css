@@ -1043,10 +1043,10 @@ button{cursor:pointer;font-family:inherit}
   border:1px solid var(--border);background:rgba(255,255,255,0.03);
 }
 .galaxy-info-bar-fallback{
-  width:96px;height:96px;display:flex;align-items:center;justify-content:center;
-  font-size:34px;border-radius:10px;border:1px dashed var(--border);
-  background:rgba(255,255,255,0.02);opacity:0.75;
+  width:96px;height:96px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.02);overflow:hidden;
 }
+.galaxy-info-bar-fallback canvas{width:100%;height:100%;display:block;}
 .galaxy-info-bar-credit,.galaxy-popup-credit{
   font-size:9px;color:var(--text3);letter-spacing:0.04em;line-height:1.4;
   text-align:center;word-break:break-all;
@@ -1057,10 +1057,10 @@ button{cursor:pointer;font-family:inherit}
   border:1px solid var(--border);background:rgba(255,255,255,0.03);
 }
 .galaxy-popup-fallback{
-  width:100%;height:110px;display:flex;align-items:center;justify-content:center;
-  font-size:38px;border-radius:10px;border:1px dashed var(--border);
-  background:rgba(255,255,255,0.02);opacity:0.75;
+  width:100%;height:110px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.02);overflow:hidden;
 }
+.galaxy-popup-fallback canvas{width:100%;height:100%;display:block;}
 
 /* ====== 每日天文图 APOD ====== */
 .apod-card{

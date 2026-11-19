@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday, ledger, sky, moon3d, music;
+let db, auth, moonCalc, birthday, ledger, sky, moon3d, music, cosmosArt;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -187,6 +187,7 @@ async function loadModules() {
   sky = (await import('../client/star-chart.js')).default;
   moon3d = (await import('../client/moon-3d.js')).default;
   moon3d.preloadMoonTexture(); // 预热月面纹理（渲染时秒出）
+  cosmosArt = (await import('../client/cosmos-art.js')).default;
   // Load local mythology
   try {
     const r = await fetch('data/mythology.json');
@@ -2197,12 +2198,13 @@ const OBJ_SEARCH_OVERRIDES = {
   'm42': 'orion nebula', 'm45': 'pleiades', 'm51': 'whirlpool galaxy', 'm31': 'andromeda galaxy',
   'm33': 'triangulum galaxy', 'm101': 'pinwheel galaxy',
 };
-function objFallbackEmoji(obj) {
-  const t = obj.type;
-  if (t.includes('星系')) return '🌌';
-  if (t.includes('星云')) return '🌫️';
-  if (t.includes('星团')) return '✨';
-  return '🔭';
+function renderFallbackArt(fb, obj, iw, ih) {
+  if (!cosmosArt) return;
+  fb.innerHTML = '';
+  const c = document.createElement('canvas');
+  c.width = iw; c.height = ih;
+  fb.appendChild(c);
+  cosmosArt.drawObjectArt(c, obj);
 }
 function nasaPickUrl(links) {
   if (!links?.length) return null;
@@ -2246,9 +2248,9 @@ async function fetchNasaObjectImage(obj) {
   } catch (e) {}
   return { src, ...meta }; // 无 CORS 时直连展示，仅本次有效
 }
-async function applyObjectImage(obj, imgId, creditId, fallbackId) {
+async function applyObjectImage(obj, imgId, creditId, fallbackId, artW, artH) {
   const img = $(imgId), credit = $(creditId), fb = $(fallbackId);
-  fb.textContent = objFallbackEmoji(obj);
+  renderFallbackArt(fb, obj, artW, artH);
   try {
     const r = await fetchNasaObjectImage(obj);
     if (r.blob) {
@@ -2265,7 +2267,8 @@ async function applyObjectImage(obj, imgId, creditId, fallbackId) {
   } catch (e) {
     img.style.display = 'none';
     fb.style.display = 'flex';
-    credit.style.display = 'none';
+    credit.textContent = '程序化插画 · 离线';
+    credit.style.display = 'block';
   }
 }
 
@@ -2759,7 +2762,7 @@ function showGalaxyPopup(objId) {
   // Set excerpt context for text selection
   setExcerptContext(obj.name, '星系图鉴 · ' + obj.en);
 
-  applyObjectImage(obj, 'galaxyInfoBarImg', 'galaxyInfoBarCredit', 'galaxyInfoBarFallback');
+  applyObjectImage(obj, 'galaxyInfoBarImg', 'galaxyInfoBarCredit', 'galaxyInfoBarFallback', 192, 192);
 
   $('galaxyInfoBar').style.display = 'flex';
 
@@ -3056,7 +3059,7 @@ function showGalaxyFsPopup(objId) {
   };
   // Set excerpt context for text selection
   setExcerptContext(obj.name, '星系图鉴 · ' + obj.en);
-  applyObjectImage(obj, 'galaxyFsPopupImg', 'galaxyFsPopupCredit', 'galaxyFsPopupFallback');
+  applyObjectImage(obj, 'galaxyFsPopupImg', 'galaxyFsPopupCredit', 'galaxyFsPopupFallback', 336, 200);
   $('galaxyFsPopup').style.display = 'block';
 }
 
