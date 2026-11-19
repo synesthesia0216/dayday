@@ -10,17 +10,18 @@
 </head>
 <body>
 
-<!-- ====== 开屏动画（锁定态首次启动）：眼睛环视 → 眼球化月 → DAY-DAY ====== -->
+<!-- ====== 开屏动画（锁定态首次启动）：眼睛环视 → 虹膜化月 → 满月图标 ====== -->
 <div class="eye-intro" id="eyeIntro" style="display:none;">
   <div class="ei-inner">
     <svg class="ei-svg" viewBox="0 0 320 360" fill="none">
       <path class="ei-socket" d="M50,150 C80,84 240,84 270,150 C240,216 80,216 50,150 Z" stroke="#c9a96e" stroke-width="2.5" stroke-opacity="0.85"/>
       <g class="ei-iris-wrap">
-        <circle cx="160" cy="150" r="40" fill="#16204a" stroke="#c9a96e" stroke-width="2"/>
-        <circle cx="160" cy="150" r="15" fill="#04060d"/>
-        <circle cx="172" cy="138" r="4" fill="#f2ead8" opacity="0.9"/>
+        <circle class="ei-iris-flat" cx="160" cy="150" r="40" fill="#16204a" stroke="#c9a96e" stroke-width="2"/>
+        <circle class="ei-pupil" cx="160" cy="150" r="15" fill="#04060d"/>
+        <circle class="ei-spec" cx="172" cy="138" r="4" fill="#f2ead8" opacity="0.9"/>
       </g>
     </svg>
+    <canvas id="eiMoonMini" class="ei-moon-mini" width="160" height="160"></canvas>
     <canvas id="eiMoon" class="ei-moon" width="190" height="190"></canvas>
     <div class="ei-text">D A Y - D A Y</div>
   </div>
@@ -74,6 +75,10 @@
     <a class="nav-link active" data-panel="stargaze">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>
       <span>观星台</span>
+    </a>
+    <a class="nav-link" data-panel="records">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>观测日志</span>
     </a>
     <a class="nav-link" data-panel="starchart">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -155,17 +160,15 @@
       </div>
     </div>
 
-    <!-- 月相 Hero -->
+    <!-- 月相 Hero（LROC 真实纹理渲染；NASA 每日实拍在详情弹层） -->
     <div class="moon-hero stg-item" id="moonHero">
       <div class="moon-hero-halo" id="moonHeroHalo">
         <canvas class="moon-hero-canvas" id="moonHeroCanvas"></canvas>
-        <img class="moon-hero-real" id="moonHeroImg" alt="今日真实月面" loading="lazy" decoding="async">
       </div>
       <div class="moon-hero-name" id="moonHeroName"></div>
       <div class="moon-hero-en" id="moonHeroEn"></div>
       <div class="moon-hero-meta" id="moonHeroMeta"></div>
       <div class="moon-hero-next" id="moonHeroNext"></div>
-      <div class="moon-hero-src" id="moonHeroSrc"></div>
     </div>
 
     <!-- 三列数据卡 -->
@@ -207,49 +210,51 @@
       <div class="planet-list" id="planetList"></div>
     </div>
 
-    <!-- 打卡 + 周报 -->
-    <div class="mid-grid">
-      <div class="checkin-card stg-item" id="checkinCard">
-        <div class="card-head">
-          <span class="card-title">今夜打卡</span>
-          <span class="card-sub" id="checkinState">以月相铭刻此刻</span>
-        </div>
-        <div class="mood-grid" id="moodGrid"></div>
-        <div class="birthday-banner" id="birthdayBanner" style="display:none;">
-          <div class="birthday-icon">🎂</div>
-          <div class="birthday-info">
-            <div class="birthday-msg" id="birthdayMsg"></div>
-            <div class="birthday-story" id="birthdayStory"></div>
-          </div>
+    <!-- 今夜打卡（满宽） -->
+    <div class="checkin-card stg-item" id="checkinCard">
+      <div class="card-head">
+        <span class="card-title">今夜打卡</span>
+        <span class="card-sub" id="checkinState">以月相铭刻此刻</span>
+      </div>
+      <div class="mood-grid" id="moodGrid"></div>
+      <div class="birthday-banner" id="birthdayBanner" style="display:none;">
+        <div class="birthday-icon">🎂</div>
+        <div class="birthday-info">
+          <div class="birthday-msg" id="birthdayMsg"></div>
+          <div class="birthday-story" id="birthdayStory"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- 观测日志（回顾：周报 · 日历 · 统计 · 分享） -->
+  <section class="panel" id="panel-records">
+    <div class="topbar">
+      <h2>观测日志</h2>
+      <button class="btn share-card-btn" id="btnShareCard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        分享今日星图
+      </button>
+    </div>
+    <div class="panel-scroll">
       <div class="weekly-card stg-item" id="weeklyCard"></div>
-    </div>
-
-    <!-- 日历（全宽） -->
-    <div class="calendar stg-item" id="calendar"></div>
-
-    <!-- 观测统计 -->
-    <div class="stats-grid stg-item" id="statsGrid">
-      <div class="stat-card stat-heatmap-card">
-        <div class="stat-card-head"><span class="stat-card-title">观测热力图</span><span class="stat-card-sub" id="heatmapRange"></span></div>
-        <div class="heatmap" id="checkinHeatmap"></div>
-        <div class="heatmap-legend">每一格都是你望向夜空的一夜</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-head"><span class="stat-card-title">月相分布</span><span class="stat-card-sub" id="moodDistTotal"></span></div>
-        <div class="mood-dist" id="moodDist"></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-head"><span class="stat-card-title">字迹星轨</span><span class="stat-card-sub">近 8 周</span></div>
-        <div class="word-trend" id="wordTrend"></div>
+      <div class="calendar stg-item" id="calendar"></div>
+      <div class="stats-grid stg-item" id="statsGrid">
+        <div class="stat-card stat-heatmap-card">
+          <div class="stat-card-head"><span class="stat-card-title">观测热力图</span><span class="stat-card-sub" id="heatmapRange"></span></div>
+          <div class="heatmap" id="checkinHeatmap"></div>
+          <div class="heatmap-legend">每一格都是你望向夜空的一夜</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-head"><span class="stat-card-title">月相分布</span><span class="stat-card-sub" id="moodDistTotal"></span></div>
+          <div class="mood-dist" id="moodDist"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-head"><span class="stat-card-title">字迹星轨</span><span class="stat-card-sub">近 8 周</span></div>
+          <div class="word-trend" id="wordTrend"></div>
+        </div>
       </div>
     </div>
-
-    <button class="share-card-btn stg-item" id="btnShareCard">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      分享今日星图
-    </button>
   </section>
 
   <!-- 绘星阁 -->

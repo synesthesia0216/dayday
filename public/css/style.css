@@ -112,7 +112,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{
-  height:100dvh;overflow:hidden;
+  height:100vh;height:100dvh;overflow:hidden;
   overscroll-behavior:none;
 }
 body{
@@ -183,7 +183,7 @@ button{cursor:pointer;font-family:inherit}
 .pw-toggle:hover{color:var(--text2);}
 
 /* ====== App shell ====== */
-.app{display:flex;height:100dvh;overflow:hidden;}
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden;}
 
 /* ====== Drawer ====== */
 .drawer{
@@ -289,6 +289,11 @@ button{cursor:pointer;font-family:inherit}
 .panel.active{display:flex;flex-direction:column;height:100%;overflow:hidden;}
 .panel-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
 
+/* 观星台（今夜）：整页滚动 + 统一呼吸间距 */
+#panel-stargaze{overflow-y:auto;-webkit-overflow-scrolling:touch;gap:14px;padding-bottom:24px;}
+/* 观测日志（回顾）：滚动区纵向排布，间距一致 */
+#panel-records .panel-scroll{display:flex;flex-direction:column;gap:14px;padding-bottom:20px;}
+
 /* ====== Topbar ====== */
 .topbar{
   display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;
@@ -332,16 +337,10 @@ button{cursor:pointer;font-family:inherit}
   box-shadow:0 0 44px calc(var(--glow,0.3) * 36px) rgba(201,169,110,calc(var(--glow,0.3) * 0.55)), 0 0 90px rgba(140,165,210,0.07);
 }
 .moon-hero-canvas{display:block;border-radius:50%;}
-.moon-hero-real{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;
-  opacity:0;transition:opacity 1.2s var(--ease);
-}
-.moon-hero-real.loaded{opacity:1;}
 .moon-hero-name{font-size:18px;letter-spacing:0.16em;color:var(--text);margin-top:10px;font-weight:300;}
 .moon-hero-en{font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--text3);margin-top:2px;}
 .moon-hero-meta{font-size:12px;color:var(--text2);margin-top:5px;font-variant-numeric:tabular-nums;}
 .moon-hero-next{font-size:11px;color:var(--gold-dim);margin-top:2px;}
-.moon-hero-src{font-size:9px;letter-spacing:0.12em;color:var(--text3);margin-top:4px;min-height:12px;}
 
 /* 三列数据卡 */
 .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -355,7 +354,6 @@ button{cursor:pointer;font-family:inherit}
 .hero-xp-track{height:2px;background:var(--border);border-radius:1px;margin:6px 4px 0;overflow:hidden;}
 .hero-xp-fill{height:100%;background:var(--gold);width:0;transition:width .5s ease;}
 
-.mid-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:8px;align-items:start;}
 .checkin-card{
   background:var(--card);border:1px solid var(--border);
   border-radius:var(--r);padding:12px 14px;
@@ -637,7 +635,7 @@ button{cursor:pointer;font-family:inherit}
 .galaxy-level-lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;}
 
 .galaxy-view{
-  position:relative;height:clamp(200px,33dvh,400px);background:#020308;
+  position:relative;height:clamp(200px,33vh,400px);height:clamp(200px,33dvh,400px);background:#020308;
   border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;cursor:grab;touch-action:none;
   margin-bottom:16px;
@@ -1655,6 +1653,7 @@ button{cursor:pointer;font-family:inherit}
 .moon-modal-live-name{font-size:14px;color:var(--text);font-weight:300;}
 .moon-modal-live-info{font-size:11px;color:var(--text3);}
 .moon-modal-live-next{font-size:10px;color:var(--gold-dim);}
+.moon-modal-live-src{font-size:9px;color:var(--text3);letter-spacing:0.06em;min-height:12px;}
 .moon-modal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
 .moon-modal-cell{
   display:flex;flex-direction:column;align-items:center;gap:4px;
@@ -1755,7 +1754,7 @@ button{cursor:pointer;font-family:inherit}
   .btn{padding:8px 16px;font-size:14px;}
   .chip{padding:6px 12px;font-size:12px;}
   .story-card{padding:18px;}
-  .galaxy-view{height:clamp(160px,30dvh,300px);}
+  .galaxy-view{height:clamp(160px,30vh,300px);height:clamp(160px,30dvh,300px);}
   .moon-modal{max-height:90vh;}
   .moon-modal-grid{grid-template-columns:repeat(4,1fr);gap:4px;}
   .moon-modal-cell{padding:10px 4px;}
@@ -1827,7 +1826,6 @@ button{cursor:pointer;font-family:inherit}
   display:grid;
   grid-template-columns:1.5fr 1fr;
   gap:14px;
-  margin-top:14px;
 }
 .stat-card{
   background:var(--card);
@@ -2242,7 +2240,7 @@ button{cursor:pointer;font-family:inherit}
   display:flex;flex-direction:column;gap:8px;
 }
 .sky-card:hover{border-color:var(--ring);}
-#skyCardCanvas{width:100%;height:190px;border-radius:calc(var(--r)*0.8);}
+#skyCardCanvas{width:100%;height:210px;border-radius:calc(var(--r)*0.8);}
 .sky-card-hint{font-size:10px;color:var(--text3);text-align:center;letter-spacing:0.06em;}
 .planet-list{display:flex;flex-direction:column;padding:0 4px 6px;}
 .planet-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--border);}
@@ -2285,6 +2283,7 @@ button{cursor:pointer;font-family:inherit}
 .ey-num{font-size:22px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
 .ey-label{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:0.08em;}
 .ey-sub{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:0.02em;line-height:1.5;}
+@media(max-width:430px){.eph-year-stats{grid-template-columns:repeat(2,1fr);}}
 .eph-year-high{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;display:flex;flex-direction:column;gap:7px;}
 .ey-high-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text2);line-height:1.7;letter-spacing:0.03em;}
 .ey-high-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:7px;}
@@ -2308,16 +2307,10 @@ button{cursor:pointer;font-family:inherit}
   box-shadow:0 0 calc(28px * var(--glow,0.3)) rgba(201,169,110,calc(0.4 * var(--glow,0.3))), 0 0 60px rgba(140,165,210,.08);
 }
 .moon-hero-canvas{display:block;border-radius:50%;}
-.moon-hero-real{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;
-  opacity:0;transition:opacity 1.2s var(--ease);
-}
-.moon-hero-real.loaded{opacity:1;}
 .moon-hero-name{font-size:18px;letter-spacing:0.14em;color:var(--text);margin-top:12px;font-weight:300;}
 .moon-hero-en{font-size:10px;letter-spacing:0.28em;color:var(--text3);text-transform:uppercase;margin-top:2px;}
 .moon-hero-meta{font-size:12px;color:var(--text2);margin-top:6px;}
 .moon-hero-next{font-size:11px;color:var(--gold-dim);margin-top:3px;}
-.moon-hero-src{font-size:9px;letter-spacing:0.1em;color:var(--text3);margin-top:4px;min-height:14px;}
 .moon-modal-live-wrap{position:relative;flex-shrink:0;width:72px;height:72px;}
 .moon-modal-live-real{
   position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;
@@ -2360,7 +2353,7 @@ button{cursor:pointer;font-family:inherit}
   50%{box-shadow:0 2px 14px rgba(0,0,0,.35),0 0 0 8px rgba(201,169,110,0);}
 }
 
-/* ====== 开屏动画（锁定态首次启动）：眼睛环视 → 眼球化月 → DAY-DAY ====== */
+/* ====== 开屏动画（锁定态首次启动）：眼睛环视 → 虹膜化月 → 满月图标 ====== */
 .eye-intro{
   position:fixed;inset:0;z-index:99999;
   display:flex;align-items:center;justify-content:center;
@@ -2370,28 +2363,36 @@ button{cursor:pointer;font-family:inherit}
 .eye-intro.gone{opacity:0;pointer-events:none;}
 .ei-inner{position:relative;width:320px;height:360px;transform:scale(min(1,88vw/320px));}
 .ei-svg{position:absolute;left:0;top:0;width:320px;height:360px;}
-.ei-socket{opacity:0;transition:opacity .45s ease;}
-.ei-iris-wrap{opacity:0;transform-origin:160px 150px;transition:opacity .5s ease,transform .6s ease;}
+.ei-socket{opacity:0;filter:drop-shadow(0 0 5px rgba(201,169,110,.35));transition:opacity .7s ease;}
+.ei-iris-wrap{opacity:0;transform-origin:160px 150px;}
 .eye-intro.eye-open .ei-socket{opacity:1;}
-.eye-intro.eye-open .ei-iris-wrap{opacity:1;animation:eiOrbit .6s ease-in-out .35s 3;}
+.eye-intro.eye-open .ei-iris-wrap{opacity:1;animation:eiOrbit 1.2s ease-in-out .6s 2;}
 @keyframes eiOrbit{
   0%,100%{transform:translate(0,0);}
-  25%{transform:translate(12px,-8px);}
-  50%{transform:translate(-11px,9px);}
-  75%{transform:translate(7px,10px);}
+  25%{transform:translate(9px,-6px);}
+  50%{transform:translate(-8px,7px);}
+  75%{transform:translate(6px,7px);}
 }
-/* 眼球→月面：虹膜放大淡出，月面同点浮现（中心 160,150 与虹膜同心） */
+/* 虹膜内嵌小满月（与图标同材质）：平涂眼球层淡出后，月面在原眼球位置露出 */
+.ei-moon-mini{
+  position:absolute;left:120px;top:110px;width:80px;height:80px;border-radius:50%;
+  opacity:0;transition:opacity .55s ease,transform .55s ease;
+}
+.ei-iris-flat,.ei-pupil,.ei-spec{transition:opacity .45s ease;}
 .eye-intro.p2 .ei-socket{opacity:0;}
-.eye-intro.p2 .ei-iris-wrap{opacity:0;transform:scale(1.35);}
+.eye-intro.p2 .ei-iris-flat,.eye-intro.p2 .ei-pupil,.eye-intro.p2 .ei-spec{opacity:0;}
+.eye-intro.p2 .ei-moon-mini{opacity:1;}
+/* 虹膜放大为满月图标 */
 .ei-moon{
   position:absolute;left:65px;top:55px;
   opacity:0;transform:scale(.7);
   transition:opacity .6s ease,transform .6s ease;
 }
-.eye-intro.p2 .ei-moon{opacity:1;transform:scale(1);}
+.eye-intro.p3 .ei-moon-mini{opacity:0;transform:scale(1.3);}
+.eye-intro.p3 .ei-moon{opacity:1;transform:scale(1);}
 .ei-text{
   position:absolute;bottom:10px;width:100%;text-align:center;
   font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:4px;
   color:#c9a96e;opacity:0;transition:opacity .45s ease;
 }
-.eye-intro.p2 .ei-text{opacity:1;transition-delay:.35s;}
+.eye-intro.p3 .ei-text{opacity:1;transition-delay:.3s;}

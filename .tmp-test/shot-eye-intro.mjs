@@ -27,10 +27,10 @@ async function shot(name) {
   console.log('SHOT ' + name);
 }
 // 加载后即开始计时：动画 0s 起
-await sleep(350);  await shot('eye-1-orbit.png');   // 眼睛环视中
-await sleep(700);  await shot('eye-2-orbit.png');   // 第二圈环视
-await sleep(1350); await shot('eye-3-morph.png');   // t≈2.4s 化月瞬间
-await sleep(800);  await shot('eye-4-moon.png');    // t≈3.2s 月面+DAY-DAY 文字
-await sleep(1300); await shot('eye-5-login.png');   // t≈4.5s 淡出后登录屏
+await sleep(900);  await shot('eye-1-orbit.png');   // t≈0.9s 眼睛环视中
+await sleep(1100); await shot('eye-2-orbit.png');   // t≈2.0s 第二圈环视
+await sleep(1650); await shot('eye-3-morph.png');   // t≈3.65s 瞳孔淡去、虹膜现月
+await sleep(1150); await shot('eye-4-moon.png');    // t≈4.8s 满月图标+DAY-DAY 文字
+await sleep(2100); await shot('eye-5-login.png');   // t≈6.9s 淡出后登录屏
 ws.close();
 process.exit(0);

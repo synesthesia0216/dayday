@@ -1,4 +1,4 @@
-// Day-Day 真实月面影像：NASA SVS 帧 URL、hero 加载淡入、弹层同步、缓存写入、无 JS 异常
+// Day-Day 真实月面影像：hero canvas 渲染（无叠图）、弹层同步 NASA SVS 实拍、来源标注、无 JS 异常
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -60,19 +60,17 @@ await sleep(1500);
 await ev(`goPanel('stargaze')`);
 await sleep(1200);
 
-// 1. 帧 URL 公式
-await assert('hero img 已设 svs 帧源', `(() => { const s = document.getElementById('moonHeroImg').getAttribute('src') || ''; return s.includes('svs.gsfc.nasa.gov') || s.startsWith('blob:'); })()`, 15000);
+// 1. hero 无实拍叠图（canvas 渲染月面，实拍帧仅进详情弹层——避免黑边/方位错位）
+await assert('hero 无实拍 img 叠图、canvas 在位', `(() => { const h = document.getElementById('moonHero'); return !h.querySelector('img') && !!document.getElementById('moonHeroCanvas'); })()`);
+await shot('moon-hero-canvas.png');
 
-// 2. hero 加载淡入（浏览器端 <img> 直载）
-await assert('hero 真实月面图加载完成（loaded）', `document.getElementById('moonHeroImg').classList.contains('loaded')`, 20000);
-await assert('来源标注「NASA SVS」', `document.getElementById('moonHeroSrc').textContent.includes('NASA SVS')`);
-await shot('moon-hero-real.png');
-
-// 3. 月相弹层同步真实影像
+// 2. 月相弹层同步真实影像（NASA SVS）
 await ev(`document.getElementById('moonHero').click()`);
 await sleep(800);
 await assert('弹层打开', `document.getElementById('moonOverlay').classList.contains('open')`);
-await assert('弹层真实月面图加载', `(() => { const i = document.getElementById('moonModalImg'); return !!(i && i.classList.contains('loaded') && i.src); })()`, 10000);
+await assert('弹层真实月面图加载', `(() => { const i = document.getElementById('moonModalImg'); return !!(i && i.classList.contains('loaded') && i.src); })()`, 15000);
+await assert('实拍 src 为 svs 或缓存 blob', `(() => { const s = document.getElementById('moonModalImg').getAttribute('src') || ''; return s.includes('svs.gsfc.nasa.gov') || s.startsWith('blob:'); })()`, 15000);
+await assert('来源标注「NASA SVS」', `(() => { const s = document.getElementById('moonModalSrc'); return !!(s && s.textContent.includes('NASA SVS')); })()`);
 await shot('moon-modal-real.png');
 await ev(`document.getElementById('moonModalClose').click()`);
 await sleep(300);

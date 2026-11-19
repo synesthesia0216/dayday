@@ -291,23 +291,25 @@ let isSetupMode = false; // false=解锁, true=设置密钥
 let eyeIntroPlayed = false;
 if (token) tryAutoLogin(); else { playEyeIntro(); showLogin(); }
 
-// 开屏动画：眼睛环视 → 眼球化为渲染月面 → DAY-DAY 淡出。只播一次，之后启动直入登录。
+// 开屏动画：眼睛缓慢环视 2 圈 → 瞳孔淡去、虹膜现出满月 → 放大为图标满月 → DAY-DAY 淡出。
+// 只播一次，之后启动直入登录。虹膜小月与图标大月同材质同相位，衔接不跳风格。
 async function playEyeIntro() {
   const el = document.getElementById('eyeIntro');
   if (!el || eyeIntroPlayed) return;
   eyeIntroPlayed = true;
   el.style.display = 'flex';
-  const mc = document.getElementById('eiMoon');
   try {
     const m3 = await import('../client/moon-3d.js');
-    await m3.default.renderMoon(mc, { phase: 0.5 }, 190);
+    await m3.default.renderMoon(document.getElementById('eiMoon'), { phase: 0.5 }, 190);
+    await m3.default.renderMoon(document.getElementById('eiMoonMini'), { phase: 0.5 }, 160);
   } catch (e) { /* 月面渲染失败不阻断动画，画布留空 */ }
-  el.classList.remove('p2', 'gone');
+  el.classList.remove('p2', 'p3', 'gone');
   void el.offsetWidth;
   el.classList.add('eye-open');
-  setTimeout(() => el.classList.add('p2'), 2300);
-  setTimeout(() => el.classList.add('gone'), 3600);
-  setTimeout(() => { el.style.display = 'none'; }, 4150);
+  setTimeout(() => el.classList.add('p2'), 3400); // 环视 2 圈结束（.6+2×1.2s）
+  setTimeout(() => el.classList.add('p3'), 4300);
+  setTimeout(() => el.classList.add('gone'), 6300);
+  setTimeout(() => { el.style.display = 'none'; }, 6900);
   el.addEventListener('click', () => { el.style.display = 'none'; }, { once: true });
 }
 
@@ -762,7 +764,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
+  const fn = { stargaze: loadStargaze, records: loadRecords, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }
@@ -868,6 +870,7 @@ function showMoonPicker(ds, currentMoon) {
           <div class="moon-modal-live-name">${moonInfo.name} · ${moonInfo.enName}</div>
           <div class="moon-modal-live-info">光照 ${moonInfo.illumination}% · 月龄 ${moonInfo.age} 天</div>
           <div class="moon-modal-live-next">下次满月 ${moonInfo.nextFullMoon} · 下次新月 ${moonInfo.nextNewMoon}</div>
+          <div class="moon-modal-live-src" id="moonModalSrc"></div>
         </div>
       </div>
       <div class="moon-modal-grid">
@@ -883,10 +886,15 @@ function showMoonPicker(ds, currentMoon) {
 
   // Render realistic moon on the modal canvas
   setTimeout(() => renderMoonPhase($('moonModalCanvas'), moonInfo), 50);
-  // 同步真实月面影像（若 hero 已加载）
+  // 同步真实月面影像（若已加载成功）
   setTimeout(() => {
     const mi = $('moonModalImg');
-    if (mi && state.moonImgUrl) { mi.src = state.moonImgUrl; mi.classList.add('loaded'); }
+    if (mi && state.moonImgUrl) {
+      mi.src = state.moonImgUrl;
+      mi.classList.add('loaded');
+      const ms = $('moonModalSrc');
+      if (ms) ms.textContent = state.moonImgSrc || 'NASA SVS · 每日实拍';
+    }
   }, 80);
 
   // Close button
@@ -1101,11 +1109,22 @@ function renderWordTrend(notes, diary) {
     <div class="word-trend-sum">近 8 周共书写 <span class="word-trend-sum-n">${totalWords}</span> 字</div>`;
 }
 
+// 观测日志（回顾页）：周报/统计由 updateStats 统一刷新，这里补日历与入场动画
+async function loadRecords() {
+  renderCalendar();
+  if (!state.recordsEntered) {
+    state.recordsEntered = true;
+    $('panel-records').querySelectorAll('.stg-item').forEach((el, i) => {
+      el.style.animationDelay = (i * 45) + 'ms';
+      el.classList.add('stg-enter');
+    });
+  }
+}
+
 async function loadStargaze() {
   // Update moon phase data
   state.moonData = await moonCalc.getMoonPhase();
   await loadStargazeData();
-  renderCalendar();
   renderMoodGrid();
   // 今夜星空卡（仅可见时刷新，防后台耗电）
   await renderSkyCard();
@@ -1166,6 +1185,7 @@ async function loadStargaze() {
 // ====== 真实月面影像（NASA SVS Dial-A-Moon） ======
 // 帧公式本地计算（无需 API）；设备端 CapacitorHttp 原生 fetch 可绕过 CORS 缓存 blob；
 // 浏览器端 <img> 直载不受 CORS 限制（仅显示，不读取像素）。失败静默回退 canvas 渲染。
+// 影像仅用于月相详情弹层（hero 用 canvas 渲染，避免实拍帧黑边/方位差造成视觉错位）。
 async function awardMoonSight() {
   await refreshAchievements();
   if (unlockedAch.includes('first_moon')) return;
@@ -1174,29 +1194,19 @@ async function awardMoonSight() {
 }
 
 async function loadMoonImage() {
-  const img = $('moonHeroImg');
-  const src = $('moonHeroSrc');
-  if (!img || !src) return;
   const frameInfo = moonCalc.getSvsFrame(new Date());
   const dateKey = frameInfo.dateKey;
   const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-  const apply = url => {
-    img.onload = () => {
-      img.classList.add('loaded');
-      src.textContent = 'NASA SVS · 每日实拍';
-      state.moonImgUrl = url;
-      awardMoonSight();
-    };
-    img.onerror = () => { img.classList.remove('loaded'); src.textContent = ''; state.moonImgUrl = null; };
-    img.src = url;
+  const setUrl = (url, cached) => {
+    state.moonImgUrl = url;
+    state.moonImgSrc = cached ? 'NASA SVS · 缓存帧' : 'NASA SVS · 每日实拍';
+    awardMoonSight();
   };
   try {
     // 1) 缓存命中（IndexedDB blob）
     const cached = await db.moonFrames.get(dateKey);
     if (cached && cached.blob) {
-      apply(URL.createObjectURL(cached.blob));
-      src.textContent = 'NASA SVS · 缓存帧';
-      state.moonImgUrl = img.src;
+      setUrl(URL.createObjectURL(cached.blob), true);
       return;
     }
     if (!navigator.onLine) return;
@@ -1206,12 +1216,14 @@ async function loadMoonImage() {
       if (r.ok) {
         const blob = await r.blob();
         await db.moonFrames.put(dateKey, blob, { source: 'svs', frame: frameInfo.frame });
-        apply(URL.createObjectURL(blob));
+        setUrl(URL.createObjectURL(blob), false);
         return;
       }
     }
-    // 3) 浏览器端：<img> 直载（显示级，无 CORS 阻断）
-    apply(frameInfo.url);
+    // 3) 浏览器端：<img> 直载验证（显示级，无 CORS 阻断）
+    const probe = new Image();
+    probe.onload = () => setUrl(frameInfo.url, false);
+    probe.src = frameInfo.url;
   } catch (e) {
     console.warn('moon image fallback to canvas:', e);
   }
@@ -1308,10 +1320,10 @@ async function renderSkyCard() {
   const date = skyDateAt(pickSkyHour());
   const R = Math.min(w / 2 - 16, h / 2 - 12);
   try {
-    state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h });
+    state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h, showLabels: false });
     await drawPlanetsLayer(ctx, { date, lat: state.obs.lat, lon: state.obs.lon, cx: w / 2, cy: h / 2 + 2, R, mini: true });
     const hh = String(date.getHours()).padStart(2, '0');
-    $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00 · 星等≤4.5`;
+    $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00`;
   } catch (e) {
     $('skyCardSub').textContent = '星图数据未就绪，稍后自动重试';
     // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
@@ -3553,10 +3565,10 @@ function renderEphYear() {
   $('ephYearSub').textContent = `${a.year} 年 · 全年天象总览 · 满月 ${a.moons.length} 场`;
 
   const stats = [
-    { num: a.moons.length, label: '满月', sub: `今年还剩 ${remain(a.moons)} 场` },
-    { num: a.showers.length, label: '流星雨', sub: `今年还剩 ${remain(a.showers)} 场` },
-    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `今年还剩 ${remain(a.eclipses.map(e => e.at))} 场` : '今年无日月食' },
-    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密在 ${a.conjBusiestMonth} 月 · ${a.conjBusiestCount} 场` : '全年无合相' },
+    { num: a.moons.length, label: '满月', sub: `还剩 ${remain(a.moons)} 场` },
+    { num: a.showers.length, label: '流星雨', sub: `还剩 ${remain(a.showers)} 场` },
+    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `还剩 ${remain(a.eclipses.map(e => e.at))} 场` : '今年无' },
+    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密 ${a.conjBusiestMonth} 月 · ${a.conjBusiestCount} 场` : '全年无' },
   ];
   $('ephYearStats').innerHTML = stats.map(s => `<div class="ey-stat"><div class="ey-num">${s.num}</div><div class="ey-label">${s.label}</div><div class="ey-sub">${s.sub}</div></div>`).join('');
 

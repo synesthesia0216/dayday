@@ -23,8 +23,8 @@ await send('Page.navigate', { url: 'http://localhost:3099/?t=1' });
 await sleep(1800);
 await evalJs(`localStorage.removeItem('nox_token')`);
 await send('Page.navigate', { url: 'http://localhost:3099/?t=2' });
-await sleep(700); // t≈0.7s：眼睛阶段
-console.log('t=0.7s eye stage:', await evalJs(`(() => {
+await sleep(1200); // t≈1.2s：眼睛环视中
+console.log('t=1.2s eye stage:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     shown: el && el.style.display !== 'none',
@@ -33,18 +33,25 @@ console.log('t=0.7s eye stage:', await evalJs(`(() => {
     loginVisible: !!document.getElementById('loginScreen') && getComputedStyle(document.getElementById('loginScreen')).display !== 'none'
   });
 })()`));
-await sleep(1900); // t≈2.6s：化月阶段
-console.log('t=2.6s moon stage:', await evalJs(`(() => {
+await sleep(2500); // t≈3.7s：瞳孔淡去、虹膜现月
+console.log('t=3.7s morph stage:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
-    shown: el && el.style.display !== 'none',
     p2: el && el.classList.contains('p2'),
-    gone: el && el.classList.contains('gone'),
+    miniOpaque: (() => { const m = document.getElementById('eiMoonMini'); return m && getComputedStyle(m).opacity; })(),
+    pupilGone: (() => { const p = document.querySelector('.ei-pupil'); return p && getComputedStyle(p).opacity; })()
+  });
+})()`));
+await sleep(1200); // t≈4.9s：放大为满月图标
+console.log('t=4.9s moon stage:', await evalJs(`(() => {
+  const el = document.getElementById('eyeIntro');
+  return JSON.stringify({
+    p3: el && el.classList.contains('p3'),
     moonOpaque: (() => { const m = document.getElementById('eiMoon'); return m && getComputedStyle(m).opacity; })()
   });
 })()`));
-await sleep(2200); // t≈4.8s：动画结束
-console.log('t=4.8s after anim:', await evalJs(`(() => {
+await sleep(2400); // t≈7.3s：动画结束
+console.log('t=7.3s after anim:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     hidden: !el || el.style.display === 'none' || el.classList.contains('gone'),
