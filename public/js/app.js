@@ -4492,7 +4492,7 @@ function hslStr(h, s, l) { return `hsl(${h},${s}%,${l}%)`; }
 const BACKUP_LATEST = 'dayday-backup-latest.json';
 // 每日首次启动自动备份（XP/成就等成长数据也一并保护）
 const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const LS_BACKUP_KEYS = ['nox_token','dayday_prev_level','dayday_unlocked_rewards','dayday_excerpt_hint','dayday_astro_saved','dayday_theme','dayday_custom_color','dayday_xp_once'];
+const LS_BACKUP_KEYS = ['nox_token','dayday_prev_level','dayday_unlocked_rewards','dayday_excerpt_hint','dayday_astro_saved','dayday_theme','dayday_custom_color','dayday_xp_once','dayday_ledger_cats','dayday_music'];
 
 function utf8ToB64(s) { return btoa(unescape(encodeURIComponent(s))); }
 function b64ToUtf8(b) { return decodeURIComponent(escape(atob(b))); }

@@ -745,7 +745,13 @@
       <button type="button" data-mode="income">收入</button>
     </div>
     <div class="ledger-amount" id="ledgerAmount">¥ 0.00</div>
+    <div class="ledger-cat-head" id="ledgerCatHead"></div>
     <div class="ledger-cat-grid" id="ledgerCatGrid"></div>
+    <div class="ledger-cat-form" id="ledgerCatForm" style="display:none;">
+      <input class="ledger-cat-input" id="ledgerNewCatName" placeholder="板块名字，如「餐饮」" maxlength="6">
+      <button type="button" class="ledger-cat-ok" id="ledgerNewCatOk">保存</button>
+      <button type="button" class="ledger-cat-cancel" id="ledgerNewCatCancel">取消</button>
+    </div>
     <div class="ledger-sheet-row">
       <input class="ledger-note" id="ledgerNote" placeholder="备注（可选）" maxlength="20">
       <input class="ledger-date" id="ledgerDate" type="date">
@@ -756,7 +762,7 @@
       <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
       <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button><button type="button" data-k="⌫">⌫</button>
     </div>
-    <button type="button" class="ledger-save" id="ledgerSave" disabled>✓ 记一笔</button>
+    <button type="button" class="ledger-save" id="ledgerSave" disabled>记一笔</button>
   </div>
 </div>
 

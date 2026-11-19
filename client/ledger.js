@@ -1,15 +1,16 @@
 // ====== Day-Day 记账模块 ======
 // 纯离线 IndexedDB(ledger store),金额以整数分存储
+// 收支分类由用户自建（localStorage），不预设；旧版预设分类按名称映射颜色
 
-const CATS = {
-  expense: [
-    { e: '🍜', n: '餐饮' }, { e: '🚌', n: '交通' }, { e: '🛒', n: '购物' }, { e: '🎬', n: '娱乐' },
-    { e: '🏠', n: '居住' }, { e: '📚', n: '学习' }, { e: '❤️', n: '医疗' }, { e: '✨', n: '其他' },
-  ],
-  income: [
-    { e: '💼', n: '工资' }, { e: '🎁', n: '红包' }, { e: '✨', n: '其他' },
-  ],
+const LS_CATS = 'dayday_ledger_cats';
+
+// 旧版预设分类名 → 颜色（仅用于历史数据着色）
+const LEGACY_COLORS = {
+  '餐饮': '#c98a5e', '交通': '#7a9cc0', '购物': '#b08090', '娱乐': '#c9a96e',
+  '居住': '#7ba38a', '学习': '#8aa3b8', '医疗': '#c07a6e', '其他': '#8b93a7',
+  '工资': '#6fae8f', '红包': '#c9705e',
 };
+const PALETTE = ['#c9a96e', '#7a9cc0', '#7ba38a', '#c98a5e', '#b08090', '#8aa3b8', '#c07a6e', '#8b93a7'];
 
 let db = null, toast = () => {}, onSave = null;
 
@@ -17,6 +18,10 @@ const state = {
   month: null, // 'YYYY-MM'
   expanded: false,
   sheet: null, // { entryId, mode, cat, amountStr, note, date }
+  cats: { expense: [], income: [] },
+  catsSeeded: false,
+  managing: false, // 分类管理（删除）模式
+  newCatOpen: false,
 };
 
 // ====== 工具 ======
@@ -36,7 +41,52 @@ function strToFen(s) {
   return Math.round(v * 100);
 }
 function catOf(mode, name) {
-  return (CATS[mode] || []).find(c => c.n === name) || null;
+  return (state.cats[mode] || []).find(c => c.n === name) || null;
+}
+function catColor(mode, name) {
+  const c = catOf(mode, name);
+  return c ? c.c : (LEGACY_COLORS[name] || '#8b93a7');
+}
+
+// ====== 分类持久化 ======
+function loadCats() {
+  try {
+    const v = JSON.parse(localStorage.getItem(LS_CATS));
+    if (v && Array.isArray(v.expense) && Array.isArray(v.income)) {
+      state.cats = { expense: v.expense, income: v.income };
+      state.catsSeeded = true;
+      return;
+    }
+  } catch (e) {}
+  state.cats = { expense: [], income: [] };
+}
+function saveCats() { localStorage.setItem(LS_CATS, JSON.stringify(state.cats)); }
+// 老用户迁移：已有账单但尚无自建分类时，把历史用到的分类名纳入列表
+async function seedCatsFromHistory() {
+  if (state.catsSeeded) return;
+  state.catsSeeded = true;
+  if (state.cats.expense.length || state.cats.income.length) { saveCats(); return; }
+  try {
+    const entries = await db.ledger.list();
+    ['expense', 'income'].forEach(mode => {
+      const names = [...new Set(entries.filter(e => e.type === mode).map(e => e.category).filter(Boolean))];
+      if (names.length) {
+        state.cats[mode] = names.map((n, i) => ({ n, c: LEGACY_COLORS[n] || PALETTE[i % PALETTE.length] }));
+      }
+    });
+    saveCats();
+  } catch (e) {}
+}
+function addCat(mode, name) {
+  const pool = state.cats[mode];
+  if (pool.some(c => c.n === name)) return false;
+  pool.push({ n: name, c: PALETTE[pool.length % PALETTE.length] });
+  saveCats();
+  return true;
+}
+function removeCat(mode, name) {
+  state.cats[mode] = state.cats[mode].filter(c => c.n !== name);
+  saveCats();
 }
 
 function dayLabel(ds) {
@@ -65,10 +115,13 @@ function computeStats(entries, month) {
   const days = month === currentMonth() ? new Date().getDate() : new Date(y, m, 0).getDate();
   const daily = expense > 0 ? Math.round(expense / days) : 0;
 
+  // 按实际出现过的分类聚合（含历史/已删除分类，保证统计不丢）
   const byCat = {};
-  for (const c of CATS.expense) byCat[c.n] = 0;
   for (const e of inMonth) if (e.type === 'expense') byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-  const cats = CATS.expense.map(c => ({ ...c, amount: byCat[c.n] })).filter(c => c.amount > 0).sort((a, b) => b.amount - a.amount);
+  const cats = Object.entries(byCat)
+    .filter(([, amt]) => amt > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([n, amt]) => ({ n, amount: amt, c: catColor('expense', n) }));
 
   return { expense, income, balance: income - expense, delta, daily, cats };
 }
@@ -87,13 +140,13 @@ function renderSummary(s) {
 function renderChart(s) {
   const box = $('ledgerChart');
   if (!s.cats.length) {
-    box.innerHTML = '<div class="ledger-empty">本月暂无支出记录</div>';
+    box.innerHTML = '<div class="ledger-empty">本月还没有支出。点右下角「＋」，写下第一笔吧。</div>';
     return;
   }
   const max = s.cats[0].amount;
   box.innerHTML = s.cats.map(c => `
     <div class="lb-line">
-      <span class="lb-ico">${c.e}</span>
+      <span class="lb-ico"><i class="lb-dot" style="background:${c.c}"></i></span>
       <span class="lb-name">${c.n}</span>
       <div class="lb-track"><div class="lb-fill" style="width:${Math.max(6, Math.round(c.amount / max * 100))}%"></div></div>
       <span class="lb-val">¥${fenToYuan(c.amount)}</span>
@@ -104,7 +157,7 @@ function renderList(entries, month) {
   const box = $('ledgerList');
   const inMonth = entries.filter(e => e.date && e.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
   if (!inMonth.length) {
-    box.innerHTML = '<div class="ledger-empty">这个月还没有账单</div>';
+    box.innerHTML = '<div class="ledger-empty">这个月还没有账单。点右下角「＋」记一笔，星光会替你收好。</div>';
     $('ledgerExpand').style.display = 'none';
     return;
   }
@@ -118,11 +171,10 @@ function renderList(entries, month) {
   box.innerHTML = groups.map(g => `
     <div class="lb-day">${dayLabel(g.date)}</div>
     ${g.items.map(e => {
-      const c = catOf(e.type, e.category);
       const amt = e.type === 'expense' ? `-${fenToYuan(e.amount)}` : `+${fenToYuan(e.amount)}`;
       return `<div class="lb-item" data-id="${e.id}">
-        <span class="lb-item-ico">${c ? c.e : '✨'}</span>
-        <span class="lb-item-name">${c ? c.n : e.category}${e.note ? ' · ' + e.note : ''}</span>
+        <span class="lb-item-ico"><i class="lb-dot" style="background:${catColor(e.type, e.category)}"></i></span>
+        <span class="lb-item-name">${e.category}${e.note ? ' · ' + e.note : ''}</span>
         <span class="lb-item-amt ${e.type}">${amt}</span>
       </div>`;
     }).join('')}`).join('');
@@ -147,6 +199,8 @@ function openSheet(entry) {
     entryId: entry.id, mode: entry.type, cat: entry.category,
     amountStr: (entry.amount / 100).toString(), note: entry.note || '', date: entry.date,
   } : { entryId: null, mode: 'expense', cat: null, amountStr: '', note: '', date: todayStr() };
+  state.managing = false;
+  state.newCatOpen = false;
   renderSheet();
   $('ledgerSheet').classList.add('open');
   $('ledgerSheetTitle').textContent = entry ? '编辑账单' : '记一笔';
@@ -156,18 +210,68 @@ function closeSheet() {
   state.sheet = null;
 }
 
-function sheetCat() { return (CATS[state.sheet.mode] || []).find(c => c.n === state.sheet.cat) || null; }
 function sheetFen() { return strToFen(state.sheet.amountStr); }
 
 function renderSheet() {
   const s = state.sheet;
   document.querySelectorAll('#ledgerSheetTabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === s.mode));
   $('ledgerAmount').textContent = '¥ ' + (s.amountStr || '0.00');
-  $('ledgerCatGrid').innerHTML = CATS[s.mode].map(c =>
-    `<button type="button" class="lb-cat${s.cat === c.n ? ' on' : ''}" data-cat="${c.n}"><span>${c.e}</span><em>${c.n}</em></button>`).join('');
+
+  const pool = state.cats[s.mode] || [];
+  const manageBtn = `<button type="button" class="lb-cat-manage" id="lbCatManage">${state.managing ? '完成' : '管理'}</button>`;
+  let grid = '';
+  if (!pool.length) {
+    grid = `<div class="ledger-empty">还没有分类。点「新建」，写下第一个板块，比如「餐饮」或「工资」。</div>`;
+  } else {
+    grid = pool.map(c => {
+      const cls = s.cat === c.n ? ' on' : '';
+      return `<button type="button" class="lb-cat${cls}" data-cat="${c.n}">
+        ${state.managing ? `<i class="lb-dot lb-dot-x" data-del="${c.n}" style="background:transparent;border:1px solid var(--bad);">×</i>` : `<i class="lb-dot" style="background:${c.c}"></i>`}
+        <em>${c.n}</em>
+      </button>`;
+    }).join('');
+  }
+  grid += `<button type="button" class="lb-cat lb-cat-new${state.newCatOpen ? ' on' : ''}" id="lbCatNew"><span class="lb-cat-plus">＋</span><em>新建</em></button>`;
+  $('ledgerCatHead').innerHTML = `<span class="lb-cat-head-label">${s.mode === 'expense' ? '支出板块' : '收入板块'}</span>${pool.length ? manageBtn : ''}`;
+  $('ledgerCatGrid').innerHTML = grid;
+  $('ledgerCatForm').style.display = state.newCatOpen ? 'flex' : 'none';
+  if (state.newCatOpen) $('ledgerNewCatName').value = '';
   $('ledgerNote').value = s.note;
   $('ledgerDate').value = s.date;
   updateSave();
+}
+
+function toggleNewCat() {
+  state.newCatOpen = !state.newCatOpen;
+  state.managing = false;
+  renderSheet();
+}
+function confirmNewCat() {
+  const name = $('ledgerNewCatName').value.trim();
+  if (!name) { toast('先给板块起个名字'); return; }
+  addCat(state.sheet.mode, name); // 已存在时跳过添加，直接选中
+  state.sheet.cat = name;
+  state.newCatOpen = false;
+  renderSheet();
+}
+function toggleManage() {
+  state.managing = !state.managing;
+  state.newCatOpen = false;
+  renderSheet();
+}
+function handleCatClick(target) {
+  const del = target.dataset.del;
+  if (del) {
+    removeCat(state.sheet.mode, del);
+    if (state.sheet.cat === del) state.sheet.cat = null;
+    renderSheet();
+    return;
+  }
+  const btn = target.closest('.lb-cat'); if (!btn) return;
+  if (btn.id === 'lbCatNew') { toggleNewCat(); return; }
+  if (state.managing) return;
+  state.sheet.cat = btn.dataset.cat;
+  renderSheet();
 }
 
 function updateSave() {
@@ -200,7 +304,7 @@ async function saveSheet() {
   if (s.entryId) await db.ledger.update(s.entryId, data);
   else await db.ledger.create(data);
   closeSheet();
-  toast(s.entryId ? '已更新' : '已记账 ✓');
+  toast(s.entryId ? '已更新' : '已记账');
   refresh();
   if (isNew && onSave) onSave();
 }
@@ -218,7 +322,7 @@ async function editEntry() {
   if (entry) openSheet(entry);
 }
 async function deleteEntry() {
-  if (!confirm('删除这条账单？')) return;
+  if (!confirm('删除这条账单？删除后无法恢复。')) return;
   await db.ledger.delete(state.actionId);
   closeAction();
   toast('已删除');
@@ -242,13 +346,21 @@ function bindEvents() {
   $('ledgerSheetTabs').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     state.sheet.mode = b.dataset.mode; state.sheet.cat = null;
+    state.managing = false; state.newCatOpen = false;
     renderSheet();
+  });
+  $('ledgerCatHead').addEventListener('click', e => {
+    const b = e.target.closest('#lbCatManage'); if (b) toggleManage();
   });
   $('ledgerCatGrid').addEventListener('click', e => {
-    const b = e.target.closest('.lb-cat'); if (!b) return;
-    state.sheet.cat = b.dataset.cat;
-    renderSheet();
+    handleCatClick(e.target);
   });
+  $('ledgerCatForm').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'ledgerNewCatOk') confirmNewCat();
+    else if (b.id === 'ledgerNewCatCancel') { state.newCatOpen = false; renderSheet(); }
+  });
+  $('ledgerNewCatName').addEventListener('keydown', e => { if (e.key === 'Enter') confirmNewCat(); });
   $('ledgerKeypad').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     pressKey(b.dataset.k);
@@ -270,8 +382,10 @@ function init(deps) {
   toast = deps.toast || toast;
   onSave = deps.onSave || null;
   state.month = currentMonth();
+  loadCats();
   bindEvents();
+  seedCatsFromHistory();
 }
 
-const ledger = { init, refresh, openSheet, closeSheet, CATS };
+const ledger = { init, refresh, openSheet, closeSheet };
 export default ledger;
