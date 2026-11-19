@@ -483,6 +483,12 @@ window.editProfile = function() {
     $('profileLat').value = loc.lat;
     $('profileLon').value = loc.lon;
   });
+  // Astronomy API keys
+  Promise.all([db.settings.get('nasa_key'), db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([nk, aid, asec]) => {
+    $('profileNasaKey').value = nk || '';
+    $('profileAstronomyId').value = aid || '';
+    $('profileAstronomySecret').value = asec || '';
+  }).catch(() => {});
   $('profileOverlay').classList.add('open');
 };
 
@@ -535,6 +541,10 @@ $('btnSaveProfile').addEventListener('click', async () => {
   if (isFinite(lat) && Math.abs(lat) <= 90) await db.settings.set('obs_lat', String(lat));
   if (isFinite(lon) && Math.abs(lon) <= 180) await db.settings.set('obs_lon', String(lon));
   if (city) await db.settings.set('obs_city', city);
+  // Astronomy API keys（空值清除）
+  await db.settings.set('nasa_key', $('profileNasaKey').value.trim() || null);
+  await db.settings.set('astro_api_id', $('profileAstronomyId').value.trim() || null);
+  await db.settings.set('astro_api_secret', $('profileAstronomySecret').value.trim() || null);
   state.obs = null; // 让下次读取重新加载
   renderSkyCard();
   renderProfile();
@@ -1176,6 +1186,10 @@ async function openSkyOverlay() {
   const d = await getDiscoveries();
   state.skyLitCons = d.constellations || [];
   await renderSkyFs();
+  // 填写 AstronomyAPI key 后显示「高清星图」入口
+  Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
+    $('skyFsHd').style.display = (id && sec) ? '' : 'none';
+  }).catch(() => {});
   xpOnce('sky_view', 2, '仰望今夜星空');
   await refreshAchievements();
   unlockAchievement('first_sky');
@@ -2123,6 +2137,173 @@ function unsaveAstroId(id) {
 }
 function isAstroSaved(id) { return getSavedAstro().includes(id); }
 
+// ====== NASA 实拍影像（images-api.nasa.gov 免 key；IndexedDB 缓存；离线回退符号封面） ======
+const NASA_IMG_API = 'https://images-api.nasa.gov';
+const OBJ_SEARCH_OVERRIDES = {
+  'ngc7000': 'north america nebula', 'ic434': 'horsehead nebula', 'ngc2392': 'eskimo nebula',
+  'ngc4565': 'needle galaxy', 'ngc7023': 'iris nebula', 'ngc4631': 'whale galaxy',
+  'ngc6960': 'veil nebula', 'ngc6543': 'cats eye nebula', 'ngc884': 'double cluster perseus',
+  'm78': 'messier 78', 'm92': 'messier 92', 'm71': 'messier 71', 'm106': 'messier 106',
+  'm3': 'messier 3', 'm5': 'messier 5', 'm17': 'omega nebula', 'm63': 'sunflower galaxy',
+  'm97': 'owl nebula', 'm64': 'black eye galaxy', 'm82': 'cigar galaxy', 'm81': 'bodes galaxy',
+  'm104': 'sombrero galaxy', 'm57': 'ring nebula', 'm27': 'dumbbell nebula', 'm8': 'lagoon nebula',
+  'm16': 'eagle nebula', 'm20': 'trifid nebula', 'm13': 'hercules cluster', 'm1': 'crab nebula',
+  'm42': 'orion nebula', 'm45': 'pleiades', 'm51': 'whirlpool galaxy', 'm31': 'andromeda galaxy',
+  'm33': 'triangulum galaxy', 'm101': 'pinwheel galaxy',
+};
+function objFallbackEmoji(obj) {
+  const t = obj.type;
+  if (t.includes('星系')) return '🌌';
+  if (t.includes('星云')) return '🌫️';
+  if (t.includes('星团')) return '✨';
+  return '🔭';
+}
+function nasaPickUrl(links) {
+  if (!links?.length) return null;
+  const l = links.find(x => x.href?.includes('~medium.jpg')) || links.find(x => x.href?.includes('~large.jpg')) || links[0];
+  return l?.href || null;
+}
+async function fetchNasaObjectImage(obj) {
+  const key = 'gal_' + obj.id;
+  try {
+    const hit = await db.mediaCache.get(key);
+    if (hit?.blob) return { blob: hit.blob, title: hit.meta?.title, credit: hit.meta?.credit };
+  } catch (e) {}
+  const term = OBJ_SEARCH_OVERRIDES[obj.id] || (obj.en.split(' (')[0] + ' ' + obj.id.toUpperCase());
+  const r = await fetch(`${NASA_IMG_API}/search?q=${encodeURIComponent(term)}&media_type=image&page_size=20`);
+  if (!r.ok) throw new Error('search ' + r.status);
+  const items = (await r.json())?.collection?.items || [];
+  // 相关度排序：标题/描述命中天体英文名分词越多越靠前（NASA 搜索会混入无关结果）
+  const tokens = obj.en.toLowerCase().split(/[\s·,()'"]/)
+    .map(t => t.trim())
+    .filter(t => t.length > 2 && !['the','and','for','with','nebula','cluster','galaxy','messier','hercules'].includes(t));
+  const scored = items
+    .map(it => {
+      const text = ((it.data?.[0]?.title || '') + ' ' + (it.data?.[0]?.description || '') + ' ' + (it.data?.[0]?.nasa_id || '')).toLowerCase();
+      return { url: nasaPickUrl(it.links), score: tokens.filter(t => text.includes(t)).length, it };
+    })
+    .filter(x => x.url)
+    .sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (!best) throw new Error('no results');
+  const src = best.url;
+  const meta = { title: best.it.data?.[0]?.title || obj.name, credit: 'NASA Image Library', src };
+  try {
+    const br = await fetch(src, { mode: 'cors' });
+    if (br.ok) {
+      const blob = await br.blob();
+      if (blob.size > 0) {
+        db.mediaCache.put(key, blob, meta).catch(() => {});
+        return { blob, ...meta };
+      }
+    }
+  } catch (e) {}
+  return { src, ...meta }; // 无 CORS 时直连展示，仅本次有效
+}
+async function applyObjectImage(obj, imgId, creditId, fallbackId) {
+  const img = $(imgId), credit = $(creditId), fb = $(fallbackId);
+  fb.textContent = objFallbackEmoji(obj);
+  try {
+    const r = await fetchNasaObjectImage(obj);
+    if (r.blob) {
+      if (img.dataset.url) URL.revokeObjectURL(img.dataset.url);
+      img.dataset.url = URL.createObjectURL(r.blob);
+      img.src = img.dataset.url;
+    } else if (r.src) {
+      img.src = r.src;
+    } else throw new Error('no image');
+    img.style.display = 'block';
+    fb.style.display = 'none';
+    credit.textContent = r.credit || 'NASA Image Library';
+    credit.style.display = 'block';
+  } catch (e) {
+    img.style.display = 'none';
+    fb.style.display = 'flex';
+    credit.style.display = 'none';
+  }
+}
+
+// ====== 每日天文图 APOD（需 NASA key，默认 DEMO_KEY 公共额度） ======
+let apodLoaded = false;
+async function loadApod() {
+  if (apodLoaded) return;
+  apodLoaded = true;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = (await db.settings.get('nasa_key')) || 'DEMO_KEY';
+    const cacheKey = 'apod_' + today;
+    let apod = null;
+    const hit = await db.mediaCache.get(cacheKey);
+    if (hit?.blob) { apod = { blob: hit.blob, meta: hit.meta }; }
+    else {
+      let r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}&thumbs=true&date=${today}`);
+      if (!r.ok) r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}&thumbs=true`);
+      if (!r.ok) return; // 无网或额度超限：静默不显示
+      const j = await r.json();
+      const url = j.media_type === 'image' ? j.url : (j.thumbnail_url || j.url);
+      const meta = { title: j.title, desc: j.explanation, credit: j.copyright ? '© ' + j.copyright + ' · NASA APOD' : 'NASA APOD' };
+      try {
+        const br = await fetch(url, { mode: 'cors' });
+        if (br.ok) {
+          const blob = await br.blob();
+          if (blob.size > 0) { apod = { blob, meta }; db.mediaCache.put(cacheKey, blob, meta).catch(() => {}); }
+        }
+      } catch (e) {}
+      if (!apod) apod = { src: url, meta };
+    }
+    if (apod.blob) {
+      $('apodImg').src = URL.createObjectURL(apod.blob);
+    } else if (apod.src) {
+      $('apodImg').src = apod.src;
+    } else return;
+    $('apodTitle').textContent = apod.meta.title || '';
+    $('apodDesc').textContent = (apod.meta.desc || '').slice(0, 140) + '…';
+    $('apodCredit').textContent = apod.meta.credit || 'NASA APOD';
+    $('apodCard').style.display = '';
+  } catch (e) { console.warn('APOD failed:', e); }
+}
+
+// ====== AstronomyAPI 高清星图（设置面板填 key 后解锁） ======
+async function requestHdStarChart() {
+  const appId = (await db.settings.get('astro_api_id')) || '';
+  const secret = (await db.settings.get('astro_api_secret')) || '';
+  if (!appId || !secret) { toast('先在「观测者档案」填写 AstronomyAPI 的 ID 与 Secret'); return; }
+  toast('正在请求高清星图…');
+  try {
+    const loc = await getObsLocation();
+    const d = skyDateAt(skyFsHour());
+    const { gmstDeg } = await import('../client/star-chart.js');
+    const lst = (gmstDeg(d) + loc.lon + 360) % 360;
+    const body = {
+      style: 'default',
+      observer: { latitude: loc.lat, longitude: loc.lon, date: d.toISOString() },
+      view: { type: 'area', parameters: { position: { equatorial: { rightAscension: lst / 15, declination: loc.lat } }, zoom: 4 } },
+    };
+    const auth = btoa(appId + ':' + secret);
+    const url = 'https://api.astronomyapi.com/api/v2/studio/star-chart';
+    let data = null;
+    const cap = window.capacitorHttp?.CapacitorHttp;
+    if (cap?.post) {
+      const resp = await cap.post({ url, headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/json' }, data: body });
+      if (resp.status >= 200 && resp.status < 300) data = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+    } else {
+      const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.ok) data = await r.json();
+    }
+    const imgUrl = data?.data?.imageUrl;
+    if (!imgUrl) { toast('高清星图请求失败（检查 key 与额度）'); return; }
+    $('astroHdImg').src = imgUrl;
+    $('astroHdTitle').textContent = '高清星图 · ' + String(d.getHours()).padStart(2, '0') + ':00 ' + loc.city;
+    $('astroHdOverlay').classList.add('open');
+  } catch (e) {
+    console.warn('HD star chart failed:', e);
+    toast('高清星图请求失败，请检查 key 与网络');
+  }
+}
+$('skyFsHd').addEventListener('click', requestHdStarChart);
+$('astroHdClose').addEventListener('click', () => $('astroHdOverlay').classList.remove('open'));
+$('astroHdOverlay').addEventListener('click', e => { if (e.target === $('astroHdOverlay')) $('astroHdOverlay').classList.remove('open'); });
+
 // ====== Galaxy Map (星系图鉴) ======
 async function loadGalaxy() {
   const g = await db.growth.get();
@@ -2164,6 +2345,7 @@ async function loadGalaxy() {
   initGalaxyView(lv);
   renderGalaxy();
   updateSavedCount();
+  loadApod();
 
   const savedCount = getSavedAstro().length;
   $('growthMetrics').innerHTML = `
@@ -2531,6 +2713,8 @@ function showGalaxyPopup(objId) {
   // Set excerpt context for text selection
   setExcerptContext(obj.name, '星系图鉴 · ' + obj.en);
 
+  applyObjectImage(obj, 'galaxyInfoBarImg', 'galaxyInfoBarCredit', 'galaxyInfoBarFallback');
+
   $('galaxyInfoBar').style.display = 'flex';
 
   (async () => {
@@ -2826,6 +3010,7 @@ function showGalaxyFsPopup(objId) {
   };
   // Set excerpt context for text selection
   setExcerptContext(obj.name, '星系图鉴 · ' + obj.en);
+  applyObjectImage(obj, 'galaxyFsPopupImg', 'galaxyFsPopupCredit', 'galaxyFsPopupFallback');
   $('galaxyFsPopup').style.display = 'block';
 }
 

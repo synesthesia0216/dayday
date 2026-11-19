@@ -281,6 +281,16 @@
         <span class="galaxy-xp" id="galaxyXp"></span>
       </div>
     </div>
+    <div class="apod-card" id="apodCard" style="display:none;">
+      <div class="apod-imgwrap">
+        <img id="apodImg" alt="每日天文图" loading="lazy" decoding="async">
+        <div class="apod-credit" id="apodCredit"></div>
+      </div>
+      <div class="apod-info">
+        <div class="apod-title" id="apodTitle"></div>
+        <div class="apod-desc" id="apodDesc"></div>
+      </div>
+    </div>
     <div class="galaxy-view" id="galaxyView">
       <div class="galaxy-space" id="galaxySpace">
         <div class="galaxy-core" id="galaxyCore"></div>
@@ -301,6 +311,11 @@
     </div>
     <div class="galaxy-info-bar" id="galaxyInfoBar" style="display:none;">
       <div class="galaxy-info-bar-close" id="galaxyInfoBarClose">×</div>
+      <div class="galaxy-info-bar-imgwrap">
+        <img class="galaxy-info-bar-img" id="galaxyInfoBarImg" alt="" loading="lazy" decoding="async" style="display:none;">
+        <div class="galaxy-info-bar-fallback" id="galaxyInfoBarFallback"></div>
+        <div class="galaxy-info-bar-credit" id="galaxyInfoBarCredit" style="display:none;"></div>
+      </div>
       <div class="galaxy-info-bar-content">
         <div class="galaxy-info-bar-title" id="galaxyInfoBarTitle"></div>
         <div class="galaxy-info-bar-meta">
@@ -457,6 +472,7 @@
 <div class="overlay sky-fs-overlay" id="skyFsOverlay">
   <div class="sky-fs-topbar">
     <span class="sky-fs-title">今夜星空 <i id="skyFsLoc"></i></span>
+    <button class="sky-fs-hd" id="skyFsHd" style="display:none;">高清星图</button>
     <button class="modal-close" id="skyFsClose">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -466,6 +482,22 @@
   <div class="sky-fs-slider-wrap">
     <input type="range" id="skyFsTime" min="0" max="9" step="1" value="1">
     <div class="sky-fs-time-label" id="skyFsTimeLabel">21:00</div>
+  </div>
+</div>
+
+<!-- 高清星图（AstronomyAPI 返回图） -->
+<div class="overlay astro-hd-overlay" id="astroHdOverlay">
+  <div class="astro-hd-modal">
+    <div class="modal-head">
+      <span class="modal-title-text" id="astroHdTitle">高清星图</span>
+      <button class="modal-close" id="astroHdClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="astro-hd-body">
+      <img id="astroHdImg" alt="高清星图" loading="lazy" decoding="async">
+      <div class="astro-hd-credit">AstronomyAPI · Star Chart Studio</div>
+    </div>
   </div>
 </div>
 
@@ -501,6 +533,11 @@
     <div class="galaxy-info-popup" id="galaxyFsPopup" style="display:none;">
       <div class="galaxy-popup-close" id="galaxyFsPopupClose">×</div>
       <div class="galaxy-popup-title" id="galaxyFsPopupTitle"></div>
+      <div class="galaxy-popup-imgwrap">
+        <img class="galaxy-popup-img" id="galaxyFsPopupImg" alt="" loading="lazy" decoding="async" style="display:none;">
+        <div class="galaxy-popup-fallback" id="galaxyFsPopupFallback"></div>
+        <div class="galaxy-popup-credit" id="galaxyFsPopupCredit" style="display:none;"></div>
+      </div>
       <div class="galaxy-popup-type" id="galaxyFsPopupType"></div>
       <div class="galaxy-popup-dist" id="galaxyFsPopupDist"></div>
       <div class="galaxy-popup-desc" id="galaxyFsPopupDesc"></div>
@@ -575,6 +612,14 @@
         </div>
       </div>
       <button class="login-btn" id="btnSaveProfile" style="width:auto;padding:8px 32px;">保存星轨档案</button>
+      <!-- 天文数据源（可选，不填也可用） -->
+      <div style="width:100%;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
+        <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">天文数据源（可选）</label>
+        <input class="login-input" type="text" id="profileNasaKey" placeholder="NASA API Key（留空用公共额度）" autocomplete="off">
+        <input class="login-input" type="text" id="profileAstronomyId" placeholder="AstronomyAPI Application ID" autocomplete="off">
+        <input class="login-input" type="password" id="profileAstronomySecret" placeholder="AstronomyAPI Application Secret" autocomplete="off">
+        <div style="font-size:10px;color:var(--text3);line-height:1.5;">月面与图鉴影像来自 NASA 公开数据，无需 key。填写 key 后解锁「每日天文图」与「高清星图」</div>
+      </div>
       <!-- 数据备份 -->
       <div style="width:100%;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
         <label style="font-size:11px;color:var(--text3);letter-spacing:0.06em;">星河备份</label>

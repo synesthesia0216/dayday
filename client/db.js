@@ -2,10 +2,10 @@
 // 替代 Node.js 服务器的所有 JSON 文件存储
 
 const DB_NAME = 'dayday';
-const DB_VER = 3;
-const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory','ledger','moonFrames'];
+const DB_VER = 4;
+const STORES = ['notes','diary','checkins','reminders','growth','storyCollection','profile','settings','users','storyHistory','ledger','moonFrames','mediaCache'];
 const DATA_STORES = new Set(['notes','diary','checkins','reminders','storyCollection','ledger']);
-const CACHE_STORES = new Set(['moonFrames']);
+const CACHE_STORES = new Set(['moonFrames','mediaCache']);
 
 let _db = null;
 let _scope = 'full';
@@ -218,6 +218,10 @@ const db = {
   moonFrames: {
     get: dateKey => get('moonFrames', dateKey),
     put: async (dateKey, blob, meta) => { await openDB(); await promisify(tx('moonFrames', 'readwrite').put({ id: dateKey, blob, meta: meta || {}, fetchedAt: new Date().toISOString() })); },
+  },
+  mediaCache: {
+    get: key => get('mediaCache', key),
+    put: async (key, blob, meta) => { await openDB(); await promisify(tx('mediaCache', 'readwrite').put({ id: key, blob, meta: meta || {}, fetchedAt: new Date().toISOString() })); },
   },
   stats: async () => {
     const [notes, reminders, checkins, diary, g] = await Promise.all([
