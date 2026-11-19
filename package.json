@@ -7,8 +7,8 @@
     "start": "node server.js",
     "cap:init": "npx cap init \"Day-Day · 观星台\" com.dayday.app",
     "cap:add": "npx cap add android",
-    "cap:sync": "npx cap copy && npx cap sync",
-    "cap:build": "npx cap copy && npx cap sync && cd android && gradlew assembleDebug",
+    "cap:sync": "node scripts/patch-share-plugin.mjs && npx cap copy && npx cap sync",
+    "cap:build": "node scripts/patch-share-plugin.mjs && npx cap copy && npx cap sync && cd android && .\\gradlew.bat assembleDebug",
     "gen-icons": "node scripts/gen-icons.js"
   },
   "dependencies": {
