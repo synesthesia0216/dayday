@@ -83,6 +83,10 @@
       <span>坐标日志</span>
       <span class="badge" id="badgeReminders">0</span>
     </a>
+    <a class="nav-link" data-panel="ephemeris">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2.5"/></svg>
+      <span>星历</span>
+    </a>
   </nav>
   <div class="drawer-theme" id="drawerTheme">
     <button type="button" class="drawer-theme-label" id="drawerThemeLabel">
@@ -359,6 +363,12 @@
     <div class="topbar"><h2>坐标日志</h2><button class="btn" id="btnNewReminder">+ 设定航向</button></div>
     <div class="coord-list" id="remindersList"></div>
     <div class="empty" id="remindersEmpty">尚未设定航向<br>点「＋ 设定航向」，设下坐标与到点提醒</div>
+  </section>
+
+  <!-- 星历（天文日历） -->
+  <section class="panel panel-scroll" id="panel-ephemeris">
+    <div class="topbar"><h2>星历</h2><span class="eph-hint">未来 60 天 · 全离线历表</span></div>
+    <div class="eph-list" id="ephList"></div>
   </section>
 
   <!-- 记账 -->

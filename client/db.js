@@ -236,7 +236,16 @@ const db = {
   },
   settings: {
     get: async key => { const s = await get('settings', key); return s ? s.value : null; },
-    set: async (key, value) => { await openDB(); await promisify(tx('settings', 'readwrite').put({ id: key, value })); },
+    set: async (key, value) => {
+      await openDB();
+      // 等事务 oncomplete：写未提交就返回会让紧接着的 get 读到旧值
+      await new Promise((resolve, reject) => {
+        const t = _db.transaction('settings', 'readwrite');
+        t.objectStore('settings').put({ id: key, value });
+        t.oncomplete = () => resolve();
+        t.onerror = () => reject(t.error);
+      });
+    },
   },
   moonFrames: {
     get: dateKey => get('moonFrames', dateKey),

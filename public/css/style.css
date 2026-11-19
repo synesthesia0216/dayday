@@ -2252,6 +2252,28 @@ button{cursor:pointer;font-family:inherit}
 .planet-meta{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;letter-spacing:0.03em;}
 .planet-empty{font-size:13px;color:var(--text3);padding:14px 2px;letter-spacing:0.04em;}
 
+/* ====== 星历（天文日历） ====== */
+.eph-hint{font-size:11px;color:var(--text3);letter-spacing:0.05em;}
+.eph-list{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;}
+.eph-item{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.eph-date{flex:none;width:44px;text-align:center;border-right:1px solid var(--border);padding-right:10px;}
+.eph-d{display:block;font-size:19px;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+.eph-m{display:block;font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:0.08em;}
+.eph-body{flex:1;min-width:0;}
+.eph-title-row{display:flex;align-items:center;gap:8px;}
+.eph-tag{flex:none;font-size:10px;padding:1px 7px;border-radius:8px;letter-spacing:0.06em;}
+.eph-tag-月相{color:#e8d5a8;border:1px solid rgba(201,169,110,0.45);}
+.eph-tag-合相{color:#a8c8e8;border:1px solid rgba(140,170,210,0.45);}
+.eph-tag-流星雨{color:#a8dcc8;border:1px solid rgba(130,190,165,0.45);}
+.eph-tag-日食{color:#e8b8a0;border:1px solid rgba(210,140,110,0.5);}
+.eph-tag-月食{color:#d0a8e0;border:1px solid rgba(170,130,200,0.45);}
+.eph-title{font-size:14px;color:var(--text);letter-spacing:0.04em;}
+.eph-cd{flex:none;margin-left:auto;font-size:11px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.04em;}
+.eph-desc{font-size:12px;color:var(--text2);line-height:1.7;margin-top:5px;}
+.eph-meta{font-size:10px;color:var(--text3);margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:0.04em;}
+.eph-remind{flex:none;align-self:center;font-size:11px;color:var(--gold);background:transparent;border:1px solid rgba(201,169,110,0.45);border-radius:10px;padding:4px 10px;letter-spacing:0.06em;cursor:pointer;}
+.eph-remind.on{color:var(--text3);border-color:var(--border);}
+
 .sky-fs-overlay{background:rgba(3,5,12,.96);flex-direction:column;align-items:stretch;}
 .sky-fs-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;}
 .sky-fs-title{font-size:15px;color:var(--text);font-weight:300;letter-spacing:0.08em;}

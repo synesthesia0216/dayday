@@ -237,23 +237,24 @@ export function phaseAngle(date) {
   return m.age;
 }
 
-// 下一次满月/新月（bisect 收敛到 0.01 天）：相位角归一到 [-180,180) 后按零点穿越扫描
+// 下一次满月/新月（bisect 收敛到 0.01 天）：月龄单调递增，跨 360° 时按回跳检测包裹
 export function nextFullNewMoon(date0, target, maxDays = 42) {
   const f = (t) => phaseAngle(t);
-  const norm = (a) => (((a - target) % 360) + 540) % 360 - 180;
   const t0 = toJulian(date0);
-  let prev = norm(f(fromJulian(t0)));
+  let prev = f(fromJulian(t0));
   let found = null;
   for (let k = 1; k <= maxDays * 4; k++) {
-    const cur = norm(f(fromJulian(t0 + k * 0.25)));
-    if (prev * cur <= 0) { found = [t0 + (k - 1) * 0.25, t0 + k * 0.25]; break; }
+    const cur = f(fromJulian(t0 + k * 0.25));
+    if ((prev < target && cur >= target) || cur < prev - 180) { found = [t0 + (k - 1) * 0.25, t0 + k * 0.25]; break; }
     prev = cur;
   }
   if (!found) return null;
   let lo = found[0], hi = found[1];
-  let flo = norm(f(fromJulian(lo))), fhi = norm(f(fromJulian(hi)));
-  for (let i = 0; i < 8; i++) {
-    const mid = (lo + hi) / 2, fm = norm(f(fromJulian(mid)));
+  const raw = (t) => f(fromJulian(t));
+  const tgt = raw(lo) > raw(hi) ? target + 360 : target; // 区间内发生 360° 包裹
+  let flo = raw(lo) - tgt, fhi = raw(hi) - tgt;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2, fm = raw(mid) - tgt;
     if (flo * fm <= 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
   }
   return { type: target === 0 ? 'new' : 'full', date: fromJulian((lo + hi) / 2) };

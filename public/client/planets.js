@@ -253,7 +253,7 @@ export function nextFullNewMoon(date0, target, maxDays = 42) {
   const raw = (t) => f(fromJulian(t));
   const tgt = raw(lo) > raw(hi) ? target + 360 : target; // 区间内发生 360° 包裹
   let flo = raw(lo) - tgt, fhi = raw(hi) - tgt;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2, fm = raw(mid) - tgt;
     if (flo * fm <= 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
   }

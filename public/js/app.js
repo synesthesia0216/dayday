@@ -741,7 +741,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ledger: () => ledger && ledger.refresh() };
+  const fn = { stargaze: loadStargaze, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => renderEphemeris().catch(() => {}), ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }
@@ -3359,6 +3359,127 @@ window.editCoord = function(id) {
   buildMeta('reminder'); buildFoot('reminder'); $('modalOverlay').classList.add('open');
 };
 
+// ====== 星历（天文日历）：流星雨/日月食静态历 + 满月新月/合相计算历 ======
+const METEOR_SHOWERS = [
+  { id: 'quadrantids', name: '象限仪座流星雨', en: 'Quadrantids', month: 1, day: 4, zhr: 110, dir: '东北', desc: '源自小行星 2003 EH1 的碎屑流，以已废弃的象限仪星座命名。峰值短暂而明亮，北半球冬季最壮观的流星雨之一。' },
+  { id: 'lyrids', name: '天琴座流星雨', en: 'Lyrids', month: 4, day: 22, zhr: 18, dir: '东北', desc: '撒切尔彗星（C/1861 G1）留下的尘埃带，人类最早有记录的流星雨——公元前 687 年已被写入史书。' },
+  { id: 'eta-aquariids', name: '宝瓶座η流星雨', en: 'Eta Aquariids', month: 5, day: 6, zhr: 40, dir: '东南', desc: '哈雷彗星的碎片，与十月的猎户座流星雨同源。流星速度极快，划痕细长，黎明前观测最佳。' },
+  { id: 'perseids', name: '英仙座流星雨', en: 'Perseids', month: 8, day: 13, zhr: 100, dir: '东北', desc: '斯威夫特-塔特尔彗星的礼物，夏季最可靠的流星雨。火流星多，每年八月如约而至。' },
+  { id: 'orionids', name: '猎户座流星雨', en: 'Orionids', month: 10, day: 21, zhr: 20, dir: '东南', desc: '哈雷彗星在十月留下的痕迹，辐射点就在猎户座。速度快，近半数留下持久余迹。' },
+  { id: 'leonids', name: '狮子座流星雨', en: 'Leonids', month: 11, day: 18, zhr: 15, dir: '东南', desc: '坦普尔-塔特尔彗星的尘埃。通常安静，但每 33 年爆发一次——1833 年那场流星暴，曾让整个美洲以为星空坠落。' },
+  { id: 'geminids', name: '双子座流星雨', en: 'Geminids', month: 12, day: 14, zhr: 150, dir: '东南', desc: '母体不是彗星，而是小行星 3200 Phaethon。全年最稳定的流星雨，亮流星多、速度中等。' },
+  { id: 'ursids', name: '小熊座流星雨', en: 'Ursids', month: 12, day: 22, zhr: 10, dir: '正北', desc: '塔特尔彗星（8P/Tuttle）的碎屑，规模不大，却落在冬至前后最长的夜里。' },
+];
+const ECLIPSES = [
+  { id: 'e20260217', name: '日环食', date: '2026-02-17', desc: '月球位于远地点，无法完全遮住太阳，留下金色火环。可见于南极洲。' },
+  { id: 'e20260303', name: '月全食', date: '2026-03-03', desc: '地球的影子完全遮住月球，阳光经大气折射成血红色。美洲可见。' },
+  { id: 'e20260812', name: '日全食', date: '2026-08-12', desc: '全食带穿过格陵兰、冰岛与西班牙——欧洲本世纪最壮观的日食。' },
+  { id: 'e20260828', name: '月偏食', date: '2026-08-28', desc: '地球本影只咬去月球一角。北美与太平洋可见。' },
+  { id: 'e20270206', name: '日环食', date: '2027-02-06', desc: '火环横跨南美洲与非洲西海岸。' },
+  { id: 'e20270802', name: '日全食', date: '2027-08-02', desc: '全食带穿越直布罗陀海峡与北非，全食时长超过 6 分钟——21 世纪最长的日全食之一。' },
+];
+
+// 事件 ID 按当地日期做键：历表每次重算有秒级误差，毫秒键会导致提醒持久化对不上
+function fmtDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function buildEphEvents() {
+  const now = new Date();
+  const DAY = 86400e3, WINDOW = 60 * DAY;
+  const evs = [];
+  // 满月/新月（未来各 2 次，ELP 历表计算）
+  for (const tgt of [180, 0]) {
+    for (let k = 0; k < 2; k++) {
+      const base = new Date(now.getTime() + k * 30 * DAY);
+      const fn = planets.nextFullNewMoon(base, tgt);
+      if (!fn) continue;
+      const d = fn.date;
+      const isFull = tgt === 180;
+      evs.push({
+        id: `moon-${isFull ? 'f' : 'n'}-${fmtDateKey(d)}`,
+        at: d, tag: '月相',
+        title: isFull ? '满月' : '新月',
+        desc: isFull ? '月球与太阳分居地球两侧，整夜可见' : '月球与太阳同侧，夜空最暗，适合深空观测',
+        meta: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} · ELP 历表计算`,
+      });
+    }
+  }
+  // 行星合相（60 天窗口，行星-行星 <3°，月-行星 <4°）
+  for (const c of planets.conjunctions(now, 60)) {
+    const aName = c.a === 'moon' ? '月球' : planets.PLANET_INFO[c.a].name;
+    const bName = planets.PLANET_INFO[c.b].name;
+    evs.push({
+      id: `conj-${c.key}-${fmtDateKey(c.date)}`,
+      at: c.date, tag: '合相',
+      title: `${aName}合${bName}`,
+      desc: `两体在天空中最近时的角距 ${c.sep}°`,
+      meta: `${String(c.date.getHours()).padStart(2, '0')}:${String(c.date.getMinutes()).padStart(2, '0')} · 历表计算`,
+    });
+  }
+  // 流星雨（年度循环，取未来最近一次峰值）
+  for (const s of METEOR_SHOWERS) {
+    const y = now.getFullYear();
+    let d = new Date(y, s.month - 1, s.day, 22, 0, 0);
+    if (d.getTime() < now.getTime() - 12 * 3600e3) d = new Date(y + 1, s.month - 1, s.day, 22, 0, 0);
+    evs.push({
+      id: `shower-${s.id}-${d.getFullYear()}`,
+      at: d, tag: '流星雨',
+      title: `${s.name}峰值`,
+      desc: s.desc,
+      meta: `ZHR ${s.zhr} · 辐射点朝${s.dir} · ${s.en}`,
+    });
+  }
+  // 日月食（静态确认历）
+  for (const e of ECLIPSES) {
+    const [y, mo, da] = e.date.split('-').map(Number);
+    const d = new Date(y, mo - 1, da, 14, 0, 0);
+    evs.push({ id: e.id, at: d, tag: e.name.includes('月') ? '月食' : '日食', title: e.name, desc: e.desc, meta: `${y} 年 ${mo} 月 ${da} 日` });
+  }
+  return evs
+    .filter(e => e.at.getTime() > now.getTime() && e.at.getTime() < now.getTime() + WINDOW)
+    .sort((a, b) => a.at - b.at);
+}
+
+async function renderEphemeris() {
+  const list = $('ephList');
+  if (!list) return;
+  if (!planets) { list.innerHTML = `<div class="empty">历表未就绪 · 稍后自动重试</div>`; return; }
+  const evs = buildEphEvents();
+  const reminded = JSON.parse((await db.settings.get('eph_reminders')) || '[]');
+  const now = new Date();
+  const DAY = 86400e3;
+  list.innerHTML = evs.map(e => {
+    const dd = Math.round((new Date(e.at.getFullYear(), e.at.getMonth(), e.at.getDate()).getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / DAY);
+    const cd = dd <= 0 ? '今晚' : dd === 1 ? '明天' : `${dd} 天后`;
+    const on = reminded.includes(e.id);
+    return `<div class="eph-item">
+      <div class="eph-date"><span class="eph-d">${e.at.getDate()}</span><span class="eph-m">${e.at.getMonth() + 1}月</span></div>
+      <div class="eph-body">
+        <div class="eph-title-row"><span class="eph-tag eph-tag-${esc(e.tag)}">${esc(e.tag)}</span><span class="eph-title">${esc(e.title)}</span><span class="eph-cd">${cd}</span></div>
+        <div class="eph-desc">${esc(e.desc)}</div>
+        <div class="eph-meta">${esc(e.meta)}</div>
+      </div>
+      <button type="button" class="eph-remind${on ? ' on' : ''}" data-id="${esc(e.id)}">${on ? '已提醒' : '提醒'}</button>
+    </div>`;
+  }).join('') || `<div class="empty">未来 60 天暂无天象 · 星空自有安排</div>`;
+  list.querySelectorAll('.eph-remind').forEach(b => {
+    b.addEventListener('click', async () => {
+      const ev = evs.find(x => x.id === b.dataset.id);
+      if (!ev) return;
+      const reminded2 = JSON.parse((await db.settings.get('eph_reminders')) || '[]');
+      if (reminded2.includes(ev.id)) {
+        await notifications.cancelEphEvent(ev.id);
+        toast('已取消提醒');
+      } else {
+        const ok = await notifications.scheduleEphEvent(ev);
+        if (ok) toast('已设定提醒 · 到点通知你');
+      }
+      renderEphemeris();
+    });
+  });
+}
+
 // ====== 本地通知调度（原生 APK 环境生效，浏览器静默跳过） ======
 const notifications = {
   plugin() {
@@ -3394,7 +3515,7 @@ const notifications = {
     if (isNaN(due.getTime())) return;
     const list = [];
     if (due.getTime() > Date.now()) {
-      list.push({ id: this.nid('due-' + r.id), title: '⏰ ' + r.title, body: '夜色正好，去看看吧', schedule: { at: due, allowWhileIdle: true } });
+      list.push({ id: this.nid('due-' + r.id), title: r.title, body: '夜色正好，去看看吧', schedule: { at: due, allowWhileIdle: true } });
     }
     const adv = new Date(due.getTime() - 86400000);
     adv.setHours(20, 0, 0, 0);
@@ -3409,6 +3530,25 @@ const notifications = {
     const p = this.plugin(); if (!p) return;
     try { await p.cancel({ notifications: [{ id: this.nid('due-' + id) }, { id: this.nid('adv-' + id) }] }); } catch (e) {}
   },
+  async scheduleEphEvent(ev) {
+    const p = this.plugin();
+    const at = new Date(ev.at);
+    if (isNaN(at.getTime()) || at.getTime() <= Date.now()) return false;
+    if (p) {
+      try {
+        await p.schedule({ notifications: [{ id: this.nid('eph-' + ev.id), title: ev.title, body: ev.desc, schedule: { at, allowWhileIdle: true } }] });
+      } catch (e) { console.warn('eph schedule failed:', e); }
+    }
+    const list = JSON.parse((await db.settings.get('eph_reminders')) || '[]');
+    if (!list.includes(ev.id)) { list.push(ev.id); await db.settings.set('eph_reminders', JSON.stringify(list)); }
+    return true;
+  },
+  async cancelEphEvent(id) {
+    const p = this.plugin();
+    if (p) { try { await p.cancel({ notifications: [{ id: this.nid('eph-' + id) }] }); } catch (e) {} }
+    const list = JSON.parse((await db.settings.get('eph_reminders')) || '[]');
+    await db.settings.set('eph_reminders', JSON.stringify(list.filter(x => x !== id)));
+  },
   async resyncAll() {
     const p = this.plugin(); if (!p) return;
     try {
@@ -3418,6 +3558,13 @@ const notifications = {
       }
       const reminders = await db.reminders.list();
       for (const r of reminders) { if (!r.done) await this.scheduleReminder(r); }
+      // 星历提醒重排（设置里记录的事件）
+      const evs = buildEphEvents();
+      const reminded = JSON.parse((await db.settings.get('eph_reminders')) || '[]');
+      for (const id of reminded) {
+        const ev = evs.find(e => e.id === id);
+        if (ev) { await this.scheduleEphEvent(ev); }
+      }
     } catch (e) { console.warn('resync failed:', e); }
   },
 };
