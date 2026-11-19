@@ -1,6 +1,7 @@
 // ====== Day-Day 星空渲染引擎 ======
 // 真实恒星目录(HYG v41) + 星座连线(Stellarium modern) → 地平坐标 → 天顶立体投影 canvas
-// 数据：public/data/stars.json / constellations.json（构建期生成）
+// 底图：ESO/S. Brunier 全天天文摄影全景（milkyway_eso.jpg，银道坐标等距圆柱投影）
+// 数据：public/data/stars.json / constellations.json / milkyway_eso.jpg
 
 const D2R = Math.PI / 180;
 
@@ -70,6 +71,18 @@ function galToEq(lDeg, bDeg) {
   return { ra: (Math.atan2(y, x) / D2R + 360) % 360, dec: Math.asin(Math.max(-1, Math.min(1, z))) / D2R };
 }
 
+// J2000 赤道坐标(度) → 银道坐标(l,b 度)：gal = GAL_ROT · eq
+function eqToGal(raDeg, decDeg) {
+  const ra = raDeg * D2R, dec = decDeg * D2R;
+  const ex = Math.cos(dec) * Math.cos(ra), ey = Math.cos(dec) * Math.sin(ra), ez = Math.sin(dec);
+  const gx = GAL_ROT[0][0] * ex + GAL_ROT[0][1] * ey + GAL_ROT[0][2] * ez;
+  const gy = GAL_ROT[1][0] * ex + GAL_ROT[1][1] * ey + GAL_ROT[1][2] * ez;
+  const gz = GAL_ROT[2][0] * ex + GAL_ROT[2][1] * ey + GAL_ROT[2][2] * ez;
+  const l = (Math.atan2(gy, gx) / D2R + 360) % 360;
+  const b = Math.asin(Math.max(-1, Math.min(1, gz))) / D2R;
+  return { l, b };
+}
+
 // 地平坐标 → 天顶立体投影（北朝上、东朝右；地平圈映射到半径 R 的圆）
 function altazToXY(altDeg, azDeg, R) {
   const z = Math.max(0, 90 - altDeg); // 天顶距
@@ -119,6 +132,102 @@ async function ensureCatalog() {
   return catalog;
 }
 
+// ====== 照片级星空底图（ESO/S. Brunier 全天全景） ======
+// 全景为银道坐标等距圆柱投影：x=(0.5+l/360)·W，y=(0.5−b/180)·H，l 自左向右、北朝上
+// （投影方向经亮星点源实测校准：Arcturus/Antares/Fomalhaut 预测点与照片星点重合）
+let texPromise = null;
+function ensureTexture() {
+  if (texPromise) return texPromise;
+  texPromise = new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const TW = 2048, TH = 1024;
+        const c = document.createElement('canvas');
+        c.width = TW; c.height = TH;
+        const cx = c.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0, TW, TH);
+        resolve({ data: cx.getImageData(0, 0, TW, TH).data, w: TW, h: TH });
+      } catch (e) { console.warn('星空底图解码失败', e); resolve(null); }
+    };
+    img.onerror = () => { console.warn('星空底图加载失败'); resolve(null); };
+    img.src = 'data/milkyway_eso.jpg';
+  });
+  return texPromise;
+}
+
+// 赤道坐标 → 底图像素（双线性采样，供外部对齐校验）
+function sampleTexture(tex, raDeg, decDeg) {
+  const g = eqToGal(raDeg, decDeg);
+  const tx = ((0.5 + g.l / 360) * tex.w) % tex.w;
+  const ty = (0.5 - g.b / 180) * tex.h;
+  const x0 = Math.floor(tx), y0 = Math.min(tex.h - 1, Math.floor(ty));
+  const fx = tx - x0, fy = ty - y0;
+  const x1 = (x0 + 1) % tex.w;
+  const y1 = Math.min(tex.h - 1, y0 + 1);
+  const d = tex.data;
+  const i00 = (y0 * tex.w + x0) * 4, i10 = (y0 * tex.w + x1) * 4, i01 = (y1 * tex.w + x0) * 4, i11 = (y1 * tex.w + x1) * 4;
+  const out = [];
+  for (let c = 0; c < 3; c++) {
+    const v = (d[i00 + c] * (1 - fx) + d[i10 + c] * fx) * (1 - fy) + (d[i01 + c] * (1 - fx) + d[i11 + c] * fx) * fy;
+    out.push(v);
+  }
+  return out;
+}
+
+// 把全景按当前观测位置+时间重投影到天顶立体圆内（低分辨率逐像素重投影，放大贴回）
+async function drawSkyTexture(ctx, opts, lst) {
+  const tex = await ensureTexture();
+  if (!tex) return false;
+  const { lat, cx, cy } = opts;
+  const R = opts.radius;
+  const M = Math.max(96, Math.round(R));
+  const map = document.createElement('canvas');
+  map.width = M; map.height = M;
+  const mctx = map.getContext('2d', { willReadFrequently: true });
+  const img = mctx.createImageData(M, M);
+  const d = img.data;
+  const sinLat = Math.sin(lat * D2R), cosLat = Math.cos(lat * D2R);
+  const scale = 0.62 * (opts.dim ?? 1);
+  const tw = tex.w, th = tex.h, td = tex.data;
+  for (let j = 0; j < M; j++) {
+    const dy = j + 0.5 - M / 2;
+    for (let i = 0; i < M; i++) {
+      const dx = i + 0.5 - M / 2;
+      const r = Math.hypot(dx, dy);
+      const k = (j * M + i) * 4;
+      if (r > R - 2) continue;
+      const z = 2 * Math.atan2(r, R);
+      const alt = 90 - z / D2R;
+      if (alt <= 0.5) continue;
+      const az = Math.atan2(dx, -dy);
+      const sinAlt = Math.sin(alt * D2R), cosAlt = Math.cos(alt * D2R);
+      const sinDec = sinLat * sinAlt + cosLat * cosAlt * Math.cos(az);
+      const dec = Math.asin(Math.max(-1, Math.min(1, sinDec))) / D2R;
+      const H = Math.atan2(-cosAlt * Math.sin(az), sinAlt * cosLat - cosAlt * sinLat * Math.cos(az));
+      const ra = ((lst - H / D2R) % 360 + 360) % 360;
+      const g = eqToGal(ra, dec);
+      const tx = ((0.5 + g.l / 360) * tw) % tw;
+      const ty = (0.5 - g.b / 180) * th;
+      const x0 = Math.floor(tx), y0 = Math.min(th - 1, Math.floor(ty));
+      const fx = tx - x0, fy = ty - y0;
+      const x1 = (x0 + 1) % tw;
+      const y1 = Math.min(th - 1, y0 + 1);
+      const i00 = (y0 * tw + x0) * 4, i10 = (y0 * tw + x1) * 4, i01 = (y1 * tw + x0) * 4, i11 = (y1 * tw + x1) * 4;
+      for (let c = 0; c < 3; c++) {
+        const v = (td[i00 + c] * (1 - fx) + td[i10 + c] * fx) * (1 - fy) + (td[i01 + c] * (1 - fx) + td[i11 + c] * fx) * fy;
+        d[k + c] = Math.min(255, v * scale);
+      }
+      d[k + 3] = 255;
+    }
+  }
+  mctx.putImageData(img, 0, 0);
+  ctx.globalAlpha = 0.95;
+  ctx.drawImage(map, cx - R, cy - R, R * 2, R * 2);
+  ctx.globalAlpha = 1;
+  return true;
+}
+
 // opts: { lat, lon, date, cx, cy, radius, w, h, showLabels=true, showMilkyWay=true, showCompass=true, showStarLabels=false, dim=1 }
 // 返回 { starsDrawn, linesDrawn, labelsDrawn } 供测试断言
 async function render(ctx, opts) {
@@ -146,8 +255,12 @@ async function render(ctx, opts) {
   ctx.fillStyle = bg;
   ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
-  // 2. 银河带（银道面 b=0 采样，宽笔柔光）
-  if (opts.showMilkyWay !== false) {
+  // 2. 照片级星空底图（ESO 全景重投影）；不可用时回退程序化银河带
+  let texDrawn = false;
+  if (opts.showTexture !== false) {
+    try { texDrawn = await drawSkyTexture(ctx, opts, lst); } catch (e) { texDrawn = false; }
+  }
+  if (!texDrawn && opts.showMilkyWay !== false) {
     const mwPts = [];
     for (let l = 0; l <= 360; l += 4) {
       const eq = galToEq(l, 0);
@@ -303,4 +416,8 @@ async function render(ctx, opts) {
   return { starsDrawn, linesDrawn, labelsDrawn, constellations: consDrawn };
 }
 
-export default { ensureCatalog, render, gmstDeg, eqToHoriz, galToEq, altazToXY };
+export default {
+  ensureCatalog, render, gmstDeg, eqToHoriz, galToEq, eqToGal, altazToXY,
+  // 测试/对齐校验：赤道坐标(度) → 底图 RGB（底图未就绪返回 null）
+  sampleSky: async (raDeg, decDeg) => { const tex = await ensureTexture(); return tex ? sampleTexture(tex, raDeg, decDeg) : null; },
+};

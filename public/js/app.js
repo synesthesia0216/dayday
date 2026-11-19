@@ -1183,6 +1183,11 @@ async function renderSkyFs() {
   $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
   $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
   $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 方位圈中心为天顶`;
+  ctx.fillStyle = 'rgba(226,232,248,0.30)';
+  ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
 }
 
 async function openSkyOverlay() {
