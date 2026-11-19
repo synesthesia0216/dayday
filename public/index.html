@@ -145,18 +145,18 @@
     <!-- 三列数据卡 -->
     <div class="hero-stats stg-item" id="heroStats">
       <div class="hero-stat">
-        <div class="hero-stat-icon">🔥</div>
+        <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg></div>
         <div class="hero-stat-val" id="heroStatStreak">—</div>
         <div class="hero-stat-label">连续观测</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-icon">✨</div>
+        <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
         <div class="hero-stat-val" id="heroStatLevel">Lv.—</div>
         <div class="hero-stat-label" id="heroStatLevelName">星阶</div>
         <div class="hero-xp-track"><div class="hero-xp-fill" id="heroXpFill"></div></div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-icon">📝</div>
+        <div class="hero-stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <div class="hero-stat-val" id="heroStatNotes">—</div>
         <div class="hero-stat-label">星图笔记</div>
       </div>
@@ -230,7 +230,7 @@
     <div class="panel-scroll">
       <div class="card-grid" id="notesGrid"></div>
       <button class="load-more-btn" id="notesLoadMore" style="display:none;" onclick="loadNotes()">加载更多星图</button>
-      <div class="empty" id="notesEmpty">夜空静谧，尚无绘制的星图</div>
+      <div class="empty" id="notesEmpty">尚无星图</div>
     </div>
   </section>
 
@@ -242,7 +242,7 @@
     </div>
     <div class="panel-scroll">
       <div class="diary-list" id="diaryList"></div>
-      <div class="empty" id="diaryEmpty">星光尚未落笔，每一次观测都是时间的星轨</div>
+      <div class="empty" id="diaryEmpty">星光未落笔，每次观测都是一段星轨</div>
     </div>
   </section>
 
@@ -268,8 +268,8 @@
     <div class="panel-scroll myth-scroll">
       <div class="story-collection-grid" id="storyCollectionGrid"></div>
       <div class="story-search-results" id="storySearchResults" style="display:none;"></div>
-      <div class="empty" id="storyCollectionEmpty">星尘未至<br>记录月相，星辰的故事便会纷至沓来</div>
-      <div class="empty" id="storySearchEmpty" style="display:none;">未寻到星尘</div>
+      <div class="empty" id="storyCollectionEmpty">星尘未至<br>记录月相，故事自然汇聚</div>
+      <div class="empty" id="storySearchEmpty" style="display:none;">没有找到</div>
     </div>
   </section>
 
@@ -343,7 +343,7 @@
   <section class="panel panel-scroll" id="panel-navigate">
     <div class="topbar"><h2>坐标日志</h2><button class="btn" id="btnNewReminder">+ 设定航向</button></div>
     <div class="coord-list" id="remindersList"></div>
-    <div class="empty" id="remindersEmpty">尚未设定航向<br>立下一个坐标，点亮前进的方向</div>
+    <div class="empty" id="remindersEmpty">尚未设定航向<br>设下坐标，到点提醒</div>
   </section>
 
   <!-- 记账 -->
@@ -577,7 +577,7 @@
       </button>
     </div>
     <div class="modal-body saved-objects-body" id="savedObjectsBody"></div>
-    <div class="empty" id="savedObjectsEmpty" style="padding:32px 0;">尚未收藏任何天体<br>在星系图鉴中点击天体即可收藏</div>
+    <div class="empty" id="savedObjectsEmpty" style="padding:32px 0;">尚无收藏<br>图鉴中点击天体即可收藏</div>
   </div>
 </div>
 

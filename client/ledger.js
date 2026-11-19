@@ -218,7 +218,7 @@ async function editEntry() {
   if (entry) openSheet(entry);
 }
 async function deleteEntry() {
-  if (!confirm('将这条账单化作星尘？')) return;
+  if (!confirm('删除这条账单？')) return;
   await db.ledger.delete(state.actionId);
   closeAction();
   toast('已删除');

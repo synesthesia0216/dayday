@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@capacitor/filesystem": "^5.2.2",
+    "@capacitor/geolocation": "^5.0.8",
     "@capacitor/local-notifications": "^5.0.8",
+    "@capacitor/share": "^5.0.8",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "jszip": "^3.10.2"
   },
   "devDependencies": {
     "@capacitor/android": "^5.7.8",

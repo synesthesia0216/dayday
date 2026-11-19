@@ -52,7 +52,7 @@ function checkLevelRewards(currentLv) {
       changed = true;
       // Only toast if this is a genuine level-up (not first load)
       if (lv > prevLv) {
-        toast('✨ 达到 Lv.' + lv + ' 解锁秘藏故事: ' + LEVEL_REWARDS[lv].title);
+        toast('达到 Lv.' + lv + '，解锁秘藏故事：' + LEVEL_REWARDS[lv].title);
       }
     }
   }
@@ -296,12 +296,12 @@ $('onboardName').addEventListener('keydown', e => { if (e.key === 'Enter') $('bt
 
 // ====== 导航引导 Tour ======
 const TOUR_STEPS = [
-  { icon:'🔭', title:'观星台', desc:'每日月相打卡\n查看实时月相和日历', panel:'stargaze' },
-  { icon:'📝', title:'绘星阁', desc:'记录灵感、随笔、摘录\n你的私人星图笔记', panel:'starchart' },
-  { icon:'📅', title:'时光星轨', desc:'写日记，回顾每一天\n星轨即是你的时间线', panel:'startrail' },
-  { icon:'📖', title:'神话书库', desc:'根据月相推送星辰故事\n收藏你喜欢的篇章', panel:'myth' },
-  { icon:'🌌', title:'星系图鉴', desc:'查看成长等级和星尘积累\n你的个人星系演化', panel:'galaxy' },
-  { icon:'📍', title:'坐标日志', desc:'设定目标和提醒\n记录人生航向', panel:'navigate' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><polyline points="12 2 12 6"/><polyline points="12 18 12 22"/><polyline points="2 12 6 12"/><polyline points="18 12 22 12"/></svg>', title:'观星台', desc:'每日月相打卡\n查看实时月相和日历', panel:'stargaze' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', title:'绘星阁', desc:'记录灵感、随笔、摘录\n你的私人星图笔记', panel:'starchart' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>', title:'时光星轨', desc:'写日记，回顾每一天\n星轨即是你的时间线', panel:'startrail' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>', title:'神话书库', desc:'根据月相推送星辰故事\n收藏你喜欢的篇章', panel:'myth' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>', title:'星系图鉴', desc:'查看成长等级和星尘积累\n你的个人星系演化', panel:'galaxy' },
+  { icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><circle cx="12" cy="12" r="2"/></svg>', title:'坐标日志', desc:'设定目标和提醒\n记录人生航向', panel:'navigate' },
 ];
 
 let tourStep = 0;
@@ -313,7 +313,7 @@ function startTour() {
 
 function showTourStep(i) {
   const s = TOUR_STEPS[i];
-  $('tourTipIcon').textContent = s.icon;
+  $('tourTipIcon').innerHTML = s.icon;
   $('tourTipTitle').textContent = s.title;
   $('tourTipDesc').textContent = s.desc;
   $('tourDots').innerHTML = TOUR_STEPS.map((_, j) => `<span class="${j === i ? 'active' : ''}"></span>`).join('');
@@ -428,14 +428,14 @@ $('loginKey').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth()
 $('btnLogout').addEventListener('click', () => { localStorage.removeItem('nox_token'); token = ''; state.profile = null; showLogin(); });
 // Reset
 $('resetLink').addEventListener('click', async () => {
-  if (!confirm('确定重置？所有星辰记录都将化作星尘，不可逆。')) return;
+  if (!confirm('确定重置？所有记录将清空，不可恢复。')) return;
   if (!db) await loadModules();
   await auth.reset();
   token = '';
   localStorage.removeItem('nox_token');
   $('loginKey').value = '';
   showLogin();
-  toast('一切已化作星尘，星门重新开启');
+  toast('已重置');
 });
 
 // ====== Profile ======
@@ -1639,9 +1639,9 @@ window.togglePin = async function(id) {
 };
 
 window.deleteNote = async function(id) {
-  if (!confirm('化作星尘？')) return;
+  if (!confirm('删除？')) return;
   await db.notes.delete(id);
-  loadNotes(); updateStats(); toast('化作星尘，归于夜空');
+  loadNotes(); updateStats(); toast('已删除');
 };
 
 function renderTypeChips() {
@@ -1720,7 +1720,7 @@ function renderDiary() {
   const sorted = [...state.diary].sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
   l.innerHTML = sorted.map(d => {
     const isToday = d.date === today;
-    const displayMood = d.mood || (isToday ? todayMood : '') || '📝';
+    const displayMood = d.mood || (isToday ? todayMood : '') || '—';
     return `
     <div class="diary-item" onclick="openDiary('${d.id}')">
       <div class="diary-emoji">${displayMood}</div>
@@ -1744,9 +1744,9 @@ $('btnNewDiary').addEventListener('click', () => {
 });
 
 window.deleteDiary = async function(id) {
-  if (!confirm('化作星尘？')) return;
+  if (!confirm('删除？')) return;
   await db.diary.delete(id);
-  loadDiary(); updateStats(); toast('化作星尘，归于夜空');
+  loadDiary(); updateStats(); toast('已删除');
 };
 
 // ====== Myth (神话书库) ======
@@ -1770,7 +1770,7 @@ async function loadStoryCollection() {
       const lockedClass = isReward ? ' story-card-reward' : '';
       const sourceText = isReward ? (s.source || '星门秘藏') : (esc(s.source || '') + ' · ' + fmtDate(s.fetchedAt || s.createdAt));
       return `<div class="story-card${lockedClass}" onclick="${isReward ? `openRewardStory('${s.id}')` : `openMythReader('${s.id}')`}">
-        <div class="story-card-title">${isReward ? '🔓 ' : ''}${esc(s.title)}</div>
+        <div class="story-card-title">${esc(s.title)}</div>
         <div class="story-card-preview">${esc((s.content || '').slice(0, 150))}</div>
         ${s.mood ? `<div class="story-card-mood">${s.mood}</div>` : ''}
         <div class="story-card-source">${sourceText}</div>
@@ -1804,7 +1804,7 @@ document.querySelectorAll('#storyTabs .tab').forEach(tab => {
 
 window.openMythReader = async function(id) {
   const s = await db.storyCollection.get(id);
-  if (!s) { toast('星尘未至'); return; }
+  if (!s) { toast('没有找到'); return; }
   // 联网书库收纳的整本公版书用预排版保留分段
   const isBook = id && id.startsWith('gutenberg_');
   $('storyBody').innerHTML = isBook
@@ -3323,7 +3323,7 @@ const notifications = {
     adv.setHours(20, 0, 0, 0);
     if (adv.getTime() > Date.now()) {
       const hh = String(due.getHours()).padStart(2, '0'), mm = String(due.getMinutes()).padStart(2, '0');
-      list.push({ id: this.nid('adv-' + r.id), title: '🌙 ' + r.title, body: '明天 ' + hh + ':' + mm + ' 到点', schedule: { at: adv, allowWhileIdle: true } });
+      list.push({ id: this.nid('adv-' + r.id), title: r.title, body: '明天 ' + hh + ':' + mm + ' 到点', schedule: { at: adv, allowWhileIdle: true } });
     }
     if (!list.length) return;
     try { await p.schedule({ notifications: list }); } catch (e) { console.warn('schedule failed:', e); }
@@ -3359,10 +3359,10 @@ window.toggleReminder = async function(id) {
 };
 
 window.deleteReminder = async function(id) {
-  if (!confirm('将此坐标化作星尘？')) return;
+  if (!confirm('删除此提醒？')) return;
   await db.reminders.delete(id);
   notifications.cancelReminder(id);
-  loadReminders(); updateStats(); toast('坐标已化作星尘');
+  loadReminders(); updateStats(); toast('已删除');
 };
 
 $('btnNewReminder').addEventListener('click', () => {
