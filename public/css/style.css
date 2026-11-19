@@ -2359,3 +2359,39 @@ button{cursor:pointer;font-family:inherit}
   0%,100%{box-shadow:0 2px 14px rgba(0,0,0,.35),0 0 0 0 rgba(201,169,110,.35);}
   50%{box-shadow:0 2px 14px rgba(0,0,0,.35),0 0 0 8px rgba(201,169,110,0);}
 }
+
+/* ====== 开屏动画（锁定态首次启动）：眼睛环视 → 眼球化月 → DAY-DAY ====== */
+.eye-intro{
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#0d1330 0%,#060814 55%,#04050d 100%);
+  opacity:1;transition:opacity .55s ease;
+}
+.eye-intro.gone{opacity:0;pointer-events:none;}
+.ei-inner{position:relative;width:320px;height:360px;transform:scale(min(1,88vw/320px));}
+.ei-svg{position:absolute;left:0;top:0;width:320px;height:360px;}
+.ei-socket{opacity:0;transition:opacity .45s ease;}
+.ei-iris-wrap{opacity:0;transform-origin:160px 150px;transition:opacity .5s ease,transform .6s ease;}
+.eye-intro.eye-open .ei-socket{opacity:1;}
+.eye-intro.eye-open .ei-iris-wrap{opacity:1;animation:eiOrbit .6s ease-in-out .35s 3;}
+@keyframes eiOrbit{
+  0%,100%{transform:translate(0,0);}
+  25%{transform:translate(12px,-8px);}
+  50%{transform:translate(-11px,9px);}
+  75%{transform:translate(7px,10px);}
+}
+/* 眼球→月面：虹膜放大淡出，月面同点浮现（中心 160,150 与虹膜同心） */
+.eye-intro.p2 .ei-socket{opacity:0;}
+.eye-intro.p2 .ei-iris-wrap{opacity:0;transform:scale(1.35);}
+.ei-moon{
+  position:absolute;left:65px;top:55px;
+  opacity:0;transform:scale(.7);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.eye-intro.p2 .ei-moon{opacity:1;transform:scale(1);}
+.ei-text{
+  position:absolute;bottom:10px;width:100%;text-align:center;
+  font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:4px;
+  color:#c9a96e;opacity:0;transition:opacity .45s ease;
+}
+.eye-intro.p2 .ei-text{opacity:1;transition-delay:.35s;}

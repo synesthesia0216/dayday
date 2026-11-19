@@ -288,7 +288,28 @@ function renderMusicUI() {
 
 // ====== Auth ======
 let isSetupMode = false; // false=解锁, true=设置密钥
-if (token) tryAutoLogin(); else showLogin();
+let eyeIntroPlayed = false;
+if (token) tryAutoLogin(); else { playEyeIntro(); showLogin(); }
+
+// 开屏动画：眼睛环视 → 眼球化为渲染月面 → DAY-DAY 淡出。只播一次，之后启动直入登录。
+async function playEyeIntro() {
+  const el = document.getElementById('eyeIntro');
+  if (!el || eyeIntroPlayed) return;
+  eyeIntroPlayed = true;
+  el.style.display = 'flex';
+  const mc = document.getElementById('eiMoon');
+  try {
+    const m3 = await import('../client/moon-3d.js');
+    await m3.default.renderMoon(mc, { phase: 0.5 }, 190);
+  } catch (e) { /* 月面渲染失败不阻断动画，画布留空 */ }
+  el.classList.remove('p2', 'gone');
+  void el.offsetWidth;
+  el.classList.add('eye-open');
+  setTimeout(() => el.classList.add('p2'), 2300);
+  setTimeout(() => el.classList.add('gone'), 3600);
+  setTimeout(() => { el.style.display = 'none'; }, 4150);
+  el.addEventListener('click', () => { el.style.display = 'none'; }, { once: true });
+}
 
 async function tryAutoLogin() {
   try {
