@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday, ledger, sky;
+let db, auth, moonCalc, birthday, ledger, sky, moon3d;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -183,6 +183,8 @@ async function loadModules() {
   ledger = (await import('../client/ledger.js')).default;
   ledger.init({ db, toast, onSave: () => xpOnce('ledger_xp', 1, '记账') });
   sky = (await import('../client/star-chart.js')).default;
+  moon3d = (await import('../client/moon-3d.js')).default;
+  moon3d.preloadMoonTexture(); // 预热月面纹理（渲染时秒出）
   // Load local mythology
   try {
     const r = await fetch('data/mythology.json');
@@ -1009,7 +1011,7 @@ async function loadStargaze() {
   // Moon hero
   if (state.moonData) {
     const m = state.moonData;
-    renderMoonPhase($('moonHeroCanvas'), m, 200);
+    await renderMoonPhase($('moonHeroCanvas'), m, 200);
     $('moonHeroCanvas').style.width = $('moonHeroCanvas').style.height = 'min(40vw, 200px)';
     $('moonHeroHalo').style.setProperty('--glow', (0.2 + m.illumination / 100 * 0.5).toFixed(2));
     $('moonHeroName').textContent = m.name;
@@ -1291,130 +1293,18 @@ window.openBirthdayStory = function(title) {
   }
 };
 
-// ====== Realistic Moon Phase Renderer ======
-// 月面纹理离屏渲染一次并缓存；动画（呼吸/旋转）走 CSS，不重绘 canvas
-let _moonTexture = null;
-
-function getMoonTexture() {
-  if (_moonTexture) return _moonTexture;
-  const S = 256;
-  const c = document.createElement('canvas');
-  c.width = S; c.height = S;
-  const g = c.getContext('2d');
-  const rnd = mulberry32(20260824);
-
-  const base = g.createRadialGradient(100, 92, 16, 128, 128, 128);
-  base.addColorStop(0, '#f8f3e5');
-  base.addColorStop(0.5, '#e9dfc9');
-  base.addColorStop(0.82, '#cbb68c');
-  base.addColorStop(1, '#8d7a55');
-  g.fillStyle = base;
-  g.beginPath(); g.arc(128, 128, 127, 0, Math.PI * 2); g.fill();
-
-  // 月海：大块柔和暗斑
-  const seas = [[92, 74, 44], [150, 92, 38], [118, 148, 40], [78, 136, 28], [172, 158, 26], [140, 66, 24], [188, 118, 22], [150, 186, 20]];
-  for (const [x, y, r] of seas) {
-    const rg = g.createRadialGradient(x, y, r * 0.2, x, y, r * 1.35);
-    rg.addColorStop(0, 'rgba(96,84,58,0.30)');
-    rg.addColorStop(0.7, 'rgba(96,84,58,0.14)');
-    rg.addColorStop(1, 'rgba(96,84,58,0)');
-    g.fillStyle = rg;
-    g.beginPath(); g.arc(x, y, r * 1.35, 0, Math.PI * 2); g.fill();
-  }
-
-  // 环形山：暗碗 + 亮缘 + 内影
-  for (let i = 0; i < 22; i++) {
-    const a = rnd() * Math.PI * 2;
-    const d = rnd() * 118;
-    const x = 128 + Math.cos(a) * d;
-    const y = 128 + Math.sin(a) * d * 0.96;
-    const r = 2 + rnd() * 9;
-    if (Math.hypot(x - 128, y - 128) > 124 - r) continue;
-    g.fillStyle = 'rgba(88,76,54,0.30)';
-    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgba(70,60,42,0.22)';
-    g.beginPath(); g.arc(x - r * 0.15, y + r * 0.15, r * 0.8, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = 'rgba(255,250,235,0.20)';
-    g.lineWidth = 1.2;
-    g.beginPath(); g.arc(x, y, r, Math.PI * 0.15, Math.PI * 0.9); g.stroke();
-    if (r > 5) {
-      g.fillStyle = 'rgba(60,52,38,0.25)';
-      g.beginPath(); g.arc(x + r * 0.25, y - r * 0.2, r * 0.35, 0, Math.PI * 2); g.fill();
-    }
-  }
-
-  // 细颗粒
-  for (let i = 0; i < 500; i++) {
-    const x = rnd() * 256, y = rnd() * 256;
-    if (Math.hypot(x - 128, y - 128) > 126) continue;
-    g.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.045)' : 'rgba(255,255,255,0.035)';
-    g.fillRect(x, y, 1.2, 1.2);
-  }
-
-  _moonTexture = c;
-  return c;
-}
-
-function renderMoonPhase(canvas, moonData, sizePx) {
+// ====== 真实月面渲染（LRO 纹理逐像素光照，见 client/moon-3d.js） ======
+async function renderMoonPhase(canvas, moonData, sizePx) {
   const size = sizePx || 64;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = size * dpr;
-  canvas.height = size * dpr;
-  canvas.style.width = size + 'px';
-  canvas.style.height = size + 'px';
+  // 真实月面：LRO 纹理 + 球面逐像素光照（相位明暗界线/临边昏暗/地照）
+  await moon3d.renderMoon(canvas, moonData, size);
 
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cx = size / 2, cy = size / 2, r = size / 2 - 1;
-  const p = moonData.phase; // 0-1, 0=new, 0.5=full
-  const k = moonData.illumination / 100;
 
-  ctx.clearRect(0, 0, size, size);
-
-  // 1) 月面纹理
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.clip();
-  const ts = r * 2;
-  ctx.drawImage(getMoonTexture(), cx - ts / 2, cy - ts / 2, ts, ts);
-  ctx.restore();
-
-  // 2) 椭圆明暗界线：evenodd 抠出亮面，暗面压暗；界线两侧描边柔化
-  if (k < 0.98) {
-    const pe = p <= 0.5 ? p : 1 - p;
-    const b = r * Math.abs(Math.cos(2 * Math.PI * p));
-    const waxing = p <= 0.5;
-    const s = waxing ? 1 : -1;
-    const soft = Math.max(2, size / 10);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.translate(cx, cy); ctx.scale(s, 1); ctx.translate(-cx, -cy);
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.moveTo(cx, cy - r);
-    ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false);
-    if (pe <= 0.25) ctx.ellipse(cx, cy, b, r, 0, Math.PI / 2, -Math.PI / 2, true);
-    else ctx.ellipse(cx, cy, b, r, 0, Math.PI / 2, Math.PI * 1.5, false);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(7,9,20,0.86)';
-    ctx.fill('evenodd');
-
-    // 界线柔边
-    ctx.strokeStyle = 'rgba(7,9,20,0.30)';
-    ctx.lineWidth = soft * 1.6;
-    ctx.beginPath();
-    if (pe <= 0.25) ctx.ellipse(cx, cy, b, r, 0, Math.PI / 2, -Math.PI / 2, true);
-    else ctx.ellipse(cx, cy, b, r, 0, Math.PI / 2, Math.PI * 1.5, false);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // 3) 边缘柔光
+  // 1) 边缘柔光
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -1428,7 +1318,7 @@ function renderMoonPhase(canvas, moonData, sizePx) {
   ctx.beginPath(); ctx.arc(cx, cy, r - 0.5, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
 
-  // 4) 金环
+  // 2) 金环
   ctx.beginPath();
   ctx.arc(cx, cy, r + 0.5, 0, Math.PI * 2);
   ctx.strokeStyle = 'rgba(201,169,110,0.14)';
@@ -1499,7 +1389,7 @@ async function generateShareCard() {
   // 大月亮
   if (m) {
     const moonCanvas = document.createElement('canvas');
-    renderMoonPhase(moonCanvas, m, moonSize);
+    await renderMoonPhase(moonCanvas, m, moonSize);
     ctx.drawImage(moonCanvas, (W - moonSize) / 2, moonY);
 
     // 月相名 + 数据
