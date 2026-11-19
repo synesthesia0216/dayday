@@ -58,6 +58,27 @@ function growthMutation(mutate) {
   });
 }
 
+// 关闭并删除整个数据库（损坏恢复用，重建走 openDB 的 onupgradeneeded）
+// 注意：onblocked 时绝不能提前 resolve——删除未完成就重开会拿到无 store 的僵尸连接
+// 被其他连接（多开页面/残留事务）阻塞时重试几次，通常数秒内释放
+function deleteDatabase() {
+  return new Promise((resolve, reject) => {
+    if (_db) { try { _db.close(); } catch (e) {} _db = null; }
+    let attempt = 0;
+    const tryDelete = () => {
+      const req = indexedDB.deleteDatabase(DB_NAME);
+      const t = setTimeout(() => {
+        if (++attempt < 3) { tryDelete(); return; }
+        reject(new Error('数据库删除超时（可能有多开页面占用）'));
+      }, 8000);
+      req.onsuccess = () => { clearTimeout(t); resolve(); };
+      req.onerror = () => { clearTimeout(t); reject(req.error); };
+      req.onblocked = () => console.warn('deleteDatabase blocked, waiting for other connections to close');
+    };
+    tryDelete();
+  });
+}
+
 // ====== Backup / Restore（缓存 store 不参与备份，避免 Blob 撑爆备份文件） ======
 async function exportAll() {
   await openDB();
@@ -80,10 +101,12 @@ async function importAll(dump) {
     const rows = dump[store];
     if (!Array.isArray(rows) || !rows.length) continue;
     await new Promise((resolve, reject) => {
-      const st = tx(store, 'readwrite');
+      // oncomplete 挂在事务上，挂在 objectStore 上永远不会触发
+      const t = _db.transaction(store, 'readwrite');
+      const st = t.objectStore(store);
       rows.forEach(r => st.put(r));
-      st.oncomplete = () => resolve();
-      st.onerror = () => reject(st.error);
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
     });
   }
 }
@@ -218,6 +241,7 @@ const db = {
   moonFrames: {
     get: dateKey => get('moonFrames', dateKey),
     put: async (dateKey, blob, meta) => { await openDB(); await promisify(tx('moonFrames', 'readwrite').put({ id: dateKey, blob, meta: meta || {}, fetchedAt: new Date().toISOString() })); },
+    remove: dateKey => remove('moonFrames', dateKey),
   },
   mediaCache: {
     get: key => get('mediaCache', key),
@@ -245,5 +269,6 @@ const db = {
 
 db.exportAll = exportAll;
 db.importAll = importAll;
+db.deleteDatabase = deleteDatabase;
 
 export default db;

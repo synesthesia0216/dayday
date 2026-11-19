@@ -189,6 +189,13 @@ async function loadModules() {
     if (r.ok) mythologyLocal = await r.json();
   } catch(e) { mythologyLocal = []; }
   if (isLite) mythologyLocal = mythologyLocal.slice(0, 8); // limit stories in lite
+  // 启动完整性检查：数据库损坏时尝试从最近备份恢复
+  try {
+    await db.stats();
+  } catch (e) {
+    console.error('DB health check failed:', e);
+    await recoverCorruptedDb();
+  }
 }
 
 // ====== Auth ======
@@ -4695,6 +4702,41 @@ async function readBackupData() {
   return null;
 }
 
+// 备份 JSON → 覆盖写入数据库（resetDb=损坏恢复时先删除整库重建）
+async function applyBackupData(data, opts = {}) {
+  if (!data || typeof data !== 'object' || !data.stores) throw new Error('invalid backup');
+  if (opts.resetDb) await db.deleteDatabase();
+  await db.importAll(data.stores);
+  if (data.localStorage && typeof data.localStorage === 'object') {
+    Object.entries(data.localStorage).forEach(([k, v]) => localStorage.setItem(k, v));
+  }
+}
+window.applyBackupData = applyBackupData; // 供测试
+
+// 启动完整性检查失败时的自动恢复（每次会话只尝试一次，防循环）
+async function recoverCorruptedDb() {
+  if (sessionStorage.getItem('dayday_recovered')) return;
+  sessionStorage.setItem('dayday_recovered', '1');
+  if (!confirm('本地数据库损坏，是否从最近备份恢复？\n取消后可稍后在「星河备份」中手动恢复。')) {
+    toast('已跳过恢复，可稍后在「星河备份」中手动恢复');
+    return;
+  }
+  toast('正在读取备份...');
+  const found = await readBackupData();
+  if (!found) { toast('未找到备份文件'); return; }
+  try {
+    let json = found.text;
+    if (found.b64) json = b64ToUtf8(found.b64);
+    const data = JSON.parse(json);
+    await applyBackupData(data, { resetDb: true });
+    toast('数据已从备份恢复');
+    setTimeout(() => location.reload(), 900);
+  } catch (e) {
+    console.error('Recovery failed:', e);
+    toast('恢复失败：' + (e.message && e.message.includes('删除超时') ? '数据库被其他页面占用，请关闭其他页面后重试' : '备份文件无效'));
+  }
+}
+
 async function restoreData() {
   if (!confirm('从备份恢复数据？\n当前所有数据将被备份内容替换。')) return;
   toast('正在读取备份...');
@@ -4704,11 +4746,7 @@ async function restoreData() {
     let json = found.text;
     if (found.b64) json = b64ToUtf8(found.b64);
     const data = JSON.parse(json);
-    if (!data || typeof data !== 'object' || !data.stores) throw new Error('invalid backup');
-    await db.importAll(data.stores);
-    if (data.localStorage && typeof data.localStorage === 'object') {
-      Object.entries(data.localStorage).forEach(([k, v]) => localStorage.setItem(k, v));
-    }
+    await applyBackupData(data);
     toast('星河数据已恢复');
     setTimeout(() => location.reload(), 900);
   } catch (e) {
