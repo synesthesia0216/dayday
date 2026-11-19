@@ -258,6 +258,7 @@
         <button class="btn btn-random" id="btnRandomStory" title="召唤星辰故事">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         </button>
+        <button class="btn btn-online" id="btnGutenberg" title="联网书库（古腾堡计划公版书）">联网书库</button>
       </div>
       <div class="tabs" id="storyTabs">
         <button class="tab active" data-tab="collection">银河档案</button>
@@ -482,6 +483,25 @@
   <div class="sky-fs-slider-wrap">
     <input type="range" id="skyFsTime" min="0" max="9" step="1" value="1">
     <div class="sky-fs-time-label" id="skyFsTimeLabel">21:00</div>
+  </div>
+</div>
+
+<!-- 联网书库（古腾堡计划公版书） -->
+<div class="overlay" id="gutenbergOverlay">
+  <div class="modal" id="gutenbergModal" style="width:min(420px,94vw);max-height:86vh;display:flex;flex-direction:column;">
+    <div class="modal-head">
+      <span class="modal-title-text">联网书库 · 古腾堡计划</span>
+      <button class="modal-close" id="gutenbergClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="gutenberg-search">
+      <input type="text" id="gutenbergQuery" placeholder="搜索公版书，如 greek myths / 山海经">
+      <button class="login-btn" id="gutenbergSearchBtn" style="flex:0 0 auto;padding:8px 14px;font-size:12px;">搜索</button>
+    </div>
+    <div class="modal-body gutenberg-body" id="gutenbergBody">
+      <div class="empty" id="gutenbergEmpty">正在连接书库…</div>
+    </div>
   </div>
 </div>
 

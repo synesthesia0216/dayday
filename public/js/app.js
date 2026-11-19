@@ -1805,7 +1805,11 @@ document.querySelectorAll('#storyTabs .tab').forEach(tab => {
 window.openMythReader = async function(id) {
   const s = await db.storyCollection.get(id);
   if (!s) { toast('星尘未至'); return; }
-  $('storyBody').innerHTML = `<h2>${esc(s.title)}</h2><p>${esc(s.content)}</p><div style="margin-top:24px;font-size:11px;color:var(--text3);">${esc(s.source || '')}</div>`;
+  // 联网书库收纳的整本公版书用预排版保留分段
+  const isBook = id && id.startsWith('gutenberg_');
+  $('storyBody').innerHTML = isBook
+    ? `<h2>${esc(s.title)}</h2><div class="story-book-text">${esc(s.content)}</div><div style="margin-top:24px;font-size:11px;color:var(--text3);">${esc(s.source || '')}</div>`
+    : `<h2>${esc(s.title)}</h2><p>${esc(s.content)}</p><div style="margin-top:24px;font-size:11px;color:var(--text3);">${esc(s.source || '')}</div>`;
   $('storyFoot').innerHTML = '';
   setExcerptContext(s.title, s.source || '神话书库');
   $('storyOverlay').classList.add('open');
@@ -1834,18 +1838,28 @@ $('storySearchInput').addEventListener('input', () => {
     $('storyCollectionGrid').innerHTML = '';
     $('storyCollectionEmpty').style.display = 'none';
 
-    const results = mythologyLocal.filter(s =>
-      s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q)
-    );
-    const res = $('storySearchResults'), emp = $('storySearchEmpty');
-    res.style.display = '';
-    if (!results.length) { res.innerHTML = ''; emp.style.display = 'block'; return; }
-    emp.style.display = 'none';
-    res.innerHTML = results.map(s => `<div class="story-card" onclick="openSearchResult('${esc(s.title.replace(/'/g, "\\'"))}')">
-      <div class="story-card-title">${esc(s.title)}</div>
-      <div class="story-card-preview">${esc(s.content.slice(0, 120))}</div>
-      <div class="story-card-source">${esc(s.source)}</div>
-    </div>`).join('');
+    // 同时搜索本地神话与银河档案收藏（联网书库收纳的书也在其中）
+    (async () => {
+      const local = mythologyLocal.filter(s =>
+        s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q)
+      );
+      const coll = (await db.storyCollection.list()).filter(s =>
+        (s.title || '').toLowerCase().includes(q) || (s.content || '').toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q)
+      ).map(s => ({ ...s, _coll: true }));
+      const results = [...local, ...coll];
+      const res = $('storySearchResults'), emp = $('storySearchEmpty');
+      res.style.display = '';
+      if (!results.length) { res.innerHTML = ''; emp.style.display = 'block'; return; }
+      emp.style.display = 'none';
+      res.innerHTML = results.map(s => {
+        const click = s._coll ? `openMythReader('${esc(s.id)}')` : `openSearchResult('${esc(s.title.replace(/'/g, "\\'"))}')`;
+        return `<div class="story-card" onclick="${click}">
+        <div class="story-card-title">${esc(s.title)}</div>
+        <div class="story-card-preview">${esc((s.content || '').slice(0, 120))}</div>
+        <div class="story-card-source">${esc(s.source || '')}</div>
+      </div>`;
+      }).join('');
+    })();
   }, 300);
 });
 
@@ -1897,6 +1911,88 @@ window.openSearchResult = function(title) {
     });
   }, 100);
 };
+
+// ====== 联网书库（古腾堡计划公版书；被墙/无网时优雅降级） ======
+const GUTENDEX_API = 'https://gutendex.com/books';
+const GUTENBERG_MAX_CHARS = 1500000;
+let gutenbergResults = [];
+
+function fetchWithTimeout(url, opts = {}, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
+$('btnGutenberg').addEventListener('click', () => {
+  $('gutenbergOverlay').classList.add('open');
+  loadGutenbergBooks('mythology');
+});
+$('gutenbergClose').addEventListener('click', () => $('gutenbergOverlay').classList.remove('open'));
+$('gutenbergOverlay').addEventListener('click', e => { if (e.target === $('gutenbergOverlay')) $('gutenbergOverlay').classList.remove('open'); });
+$('gutenbergSearchBtn').addEventListener('click', () => {
+  const q = $('gutenbergQuery').value.trim();
+  if (q) loadGutenbergBooks(null, q);
+});
+$('gutenbergQuery').addEventListener('keydown', e => { if (e.key === 'Enter') $('gutenbergSearchBtn').click(); });
+
+async function loadGutenbergBooks(topic, search) {
+  const body = $('gutenbergBody'), empty = $('gutenbergEmpty');
+  body.querySelectorAll('.gutenberg-book').forEach(x => x.remove());
+  empty.style.display = 'block';
+  empty.textContent = '正在连接书库…';
+  try {
+    let url = `${GUTENDEX_API}?languages=en,zh&` + (search ? `search=${encodeURIComponent(search)}` : `topic=${encodeURIComponent(topic)}`);
+    const r = await fetchWithTimeout(url, {}, 12000);
+    if (!r.ok) throw new Error('status ' + r.status);
+    const books = ((await r.json()).results || []).slice(0, 30);
+    gutenbergResults = books;
+    if (!books.length) { empty.textContent = '书库中没有相关书目'; return; }
+    empty.style.display = 'none';
+    body.insertAdjacentHTML('beforeend', books.map(b => `
+      <div class="gutenberg-book">
+        <div class="gutenberg-book-title">${esc(b.title)}</div>
+        <div class="gutenberg-book-meta">${esc((b.authors || []).map(a => a.name).join('、') || '佚名')} · ${esc((b.languages || []).join('/').toUpperCase())} · 下载 ${b.download_count || 0} 次</div>
+        <button class="gutenberg-book-save" data-id="${b.id}">收纳入银河档案</button>
+      </div>`).join(''));
+    body.querySelectorAll('.gutenberg-book-save').forEach(btn => {
+      btn.onclick = () => saveGutenbergBook(parseInt(btn.dataset.id), btn);
+    });
+  } catch (e) {
+    console.warn('Gutendex failed:', e);
+    empty.textContent = '书库连接失败（需联网，部分地区需 VPN）\n本地 163 篇神话不受影响';
+  }
+}
+
+async function saveGutenbergBook(id, btn) {
+  const b = gutenbergResults.find(x => x.id === id);
+  if (!b) return;
+  const url = b.formats?.['text/plain; charset=utf-8'] || b.formats?.['text/plain'] || b.formats?.['text/html; charset=utf-8'] || b.formats?.['text/html'];
+  if (!url) { toast('该书无纯文本格式，暂无法收纳'); return; }
+  btn.disabled = true; btn.textContent = '收纳中…';
+  try {
+    const r = await fetchWithTimeout(url, {}, 30000);
+    if (!r.ok) throw new Error('status ' + r.status);
+    let text = await r.text();
+    if (text.length > GUTENBERG_MAX_CHARS) text = text.slice(0, GUTENBERG_MAX_CHARS) + '\n\n……（全文过长，已截取前 150 万字符）';
+    const recId = 'gutenberg_' + b.id;
+    if (await db.storyCollection.get(recId)) { toast('已在银河档案中'); btn.textContent = '已收纳'; btn.classList.add('saved'); return; }
+    await db.storyCollection.create({
+      id: recId,
+      title: b.title,
+      content: text,
+      source: '古腾堡计划 · ' + ((b.authors || []).map(a => a.name).join('、') || '佚名') + ' · 公版书',
+      category: '联网书库',
+      fetchedAt: new Date().toISOString(),
+    });
+    toast('《' + b.title + '》已收纳入银河档案');
+    btn.textContent = '已收纳'; btn.classList.add('saved');
+    updateStats();
+  } catch (e) {
+    console.warn('save book failed:', e);
+    btn.disabled = false; btn.textContent = '重试';
+    toast('收纳失败，请检查网络');
+  }
+}
 
 // Excerpt functions — text selection based
 window.setExcerptContext = function(title, source) {
