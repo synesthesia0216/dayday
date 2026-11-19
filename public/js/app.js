@@ -7,7 +7,7 @@ const FULL_KEY = 'lemonking';
 const LITE_KEY = 'moonlight';
 let isLite = false;
 
-let db, auth, moonCalc, birthday, ledger, sky, moon3d;
+let db, auth, moonCalc, birthday, ledger, sky, moon3d, music;
 let mythologyLocal = [];
 
 const MOON_PHASES = [
@@ -182,6 +182,8 @@ async function loadModules() {
   birthday = (await import('../client/birthday.js')).default;
   ledger = (await import('../client/ledger.js')).default;
   ledger.init({ db, toast, onSave: () => xpOnce('ledger_xp', 1, '记账') });
+  music = (await import('../client/music.js')).default;
+  initMusic();
   sky = (await import('../client/star-chart.js')).default;
   moon3d = (await import('../client/moon-3d.js')).default;
   moon3d.preloadMoonTexture(); // 预热月面纹理（渲染时秒出）
@@ -198,6 +200,52 @@ async function loadModules() {
     console.error('DB health check failed:', e);
     await recoverCorruptedDb();
   }
+}
+
+// ====== 背景音乐 ======
+function initMusic() {
+  music.load();
+  $('drawerMusic').addEventListener('click', () => {
+    $('drawer').classList.add('collapsed');
+    $('drawerExpand').classList.add('visible');
+    $('drawerOverlay').classList.remove('show');
+    openMusicSheet();
+  });
+  $('musicSheetClose').addEventListener('click', closeMusicSheet);
+  $('musicSheet').addEventListener('click', e => { if (e.target === $('musicSheet')) closeMusicSheet(); });
+  $('musicToggle').addEventListener('click', () => { music.toggle(); renderMusicUI(); });
+  $('musicTracks').addEventListener('click', e => {
+    const t = e.target.closest('.music-track'); if (!t) return;
+    music.setTrack(t.dataset.id);
+    renderMusicUI();
+  });
+  $('musicVolume').addEventListener('input', e => { music.setVolume(e.target.value / 100); });
+  $('musicFab').addEventListener('click', () => {
+    music.toggle();
+    renderMusicUI();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && music.isPlaying()) { music.pause(); renderMusicUI(); }
+  });
+  renderMusicUI();
+}
+function openMusicSheet() {
+  $('musicSheet').classList.add('open');
+  renderMusicUI();
+}
+function closeMusicSheet() { $('musicSheet').classList.remove('open'); }
+function renderMusicUI() {
+  const playing = music.isPlaying();
+  const cur = music.currentTrack();
+  $('musicTracks').innerHTML = music.TRACKS.map(t => `
+    <button type="button" class="music-track${t.id === cur.id ? ' on' : ''}" data-id="${t.id}">
+      <span class="music-track-title">${t.title}</span>
+      <span class="music-track-sub">${t.sub}</span>
+    </button>`).join('');
+  $('musicToggle').textContent = playing ? '暂停' : '播放';
+  $('musicToggle').classList.toggle('playing', playing);
+  $('musicFab').style.display = music.started ? 'flex' : 'none';
+  $('musicFab').classList.toggle('playing', playing);
 }
 
 // ====== Auth ======

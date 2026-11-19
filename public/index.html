@@ -101,10 +101,16 @@
       </span>
     </div>
   </div>
-  <button type="button" class="drawer-ledger" id="drawerLedger">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="9.5" y1="12" x2="14.5" y2="12"/></svg>
-    <span>记账</span>
-  </button>
+  <div class="drawer-tools">
+    <button type="button" class="drawer-ledger" id="drawerLedger">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="9.5" y1="12" x2="14.5" y2="12"/></svg>
+      <span>记账</span>
+    </button>
+    <button type="button" class="drawer-ledger" id="drawerMusic">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span>背景音乐</span>
+    </button>
+  </div>
   <div class="drawer-foot">
     <div class="drawer-stats" id="drawerStats"></div>
     <div class="demo-badge" id="demoBadge" style="display:none;">moonlight</div>
@@ -765,6 +771,30 @@
     <button type="button" class="ledger-save" id="ledgerSave" disabled>记一笔</button>
   </div>
 </div>
+
+<!-- 背景音乐 -->
+<div class="overlay music-sheet-overlay" id="musicSheet">
+  <div class="ledger-sheet music-sheet">
+    <div class="ledger-sheet-head">
+      <span class="ledger-sheet-title">背景音乐</span>
+      <button class="modal-close" id="musicSheetClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="music-tracks" id="musicTracks"></div>
+    <div class="music-row">
+      <button type="button" class="music-toggle" id="musicToggle">播放</button>
+      <div class="music-vol">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>
+        <input type="range" id="musicVolume" min="0" max="100" value="50">
+      </div>
+    </div>
+    <div class="music-credit">音乐：Kevin MacLeod（incompetech.com）· CC BY 4.0 · 全部离线播放</div>
+  </div>
+</div>
+<button type="button" class="music-fab" id="musicFab" title="背景音乐" style="display:none;">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+</button>
 
 <!-- 账单条目操作 -->
 <div class="overlay ledger-action-overlay" id="ledgerAction">
