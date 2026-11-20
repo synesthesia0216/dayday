@@ -33,27 +33,28 @@ console.log('t=1.2s eye stage:', await evalJs(`(() => {
     loginVisible: !!document.getElementById('loginScreen') && getComputedStyle(document.getElementById('loginScreen')).display !== 'none'
   });
 })()`));
-await sleep(2900); // t≈4.1s：眼睛仍在慢速环视（2s×2 圈，尚未隐去）
-console.log('t=4.1s orbit stage:', await evalJs(`(() => {
+await sleep(2200); // t≈3.4s：单圈环视已结束（.6+2s），眼睑正在合拢
+console.log('t=3.4s closing stage:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     p2: el && el.classList.contains('p2'),
     socketStill: (() => { const s = document.querySelector('.ei-socket'); return s && getComputedStyle(s).opacity; })(),
+    socketFlat: (() => { const s = document.querySelector('.ei-socket'); return s && getComputedStyle(s).transform; })(),
     textHidden: (() => { const t = document.querySelector('.ei-text'); return t && getComputedStyle(t).opacity; })()
   });
 })()`));
-await sleep(1500); // t≈5.6s：眼睛隐去，DAY-DAY 文字浮现
-console.log('t=5.6s text stage:', await evalJs(`(() => {
+await sleep(1200); // t≈4.6s：眼已合上，DAY-DAY 文字浮现
+console.log('t=4.6s text stage:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     p2: el && el.classList.contains('p2'),
     p3: el && el.classList.contains('p3'),
     textOpaque: (() => { const t = document.querySelector('.ei-text'); return t && getComputedStyle(t).opacity; })(),
-    pupilGone: (() => { const p = document.querySelector('.ei-pupil'); return p && getComputedStyle(p).opacity; })()
+    irisGone: (() => { const w = document.querySelector('.ei-iris-wrap'); return w && getComputedStyle(w).opacity; })()
   });
 })()`));
-await sleep(3000); // t≈8.6s：动画结束
-console.log('t=8.6s after anim:', await evalJs(`(() => {
+await sleep(2400); // t≈7.0s：动画结束
+console.log('t=7.0s after anim:', await evalJs(`(() => {
   const el = document.getElementById('eyeIntro');
   return JSON.stringify({
     hidden: !el || el.style.display === 'none' || el.classList.contains('gone'),

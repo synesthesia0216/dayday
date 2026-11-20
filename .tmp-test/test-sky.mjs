@@ -1,4 +1,4 @@
-// Day-Day 今夜星空：真实星图渲染断言（星点数量、连线、独立页+滑杆、分享卡、无 console 错误）
+// Day-Day 今夜星空：真实星图渲染断言（星点数量、连线、首页小卡+全屏弹层+滑杆、分享卡、无 console 错误）
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -60,34 +60,42 @@ ws.onmessage = e => {
 };
 await send('Log.enable');
 
-await ev(`goPanel('sky')`);
+// 1. 首页今夜星空卡渲染（观星台默认页）
 await sleep(3000);
-
-// 1. 今夜星空页渲染
-await assert('星空页 canvas 已渲染且有尺寸', `(() => { const c = document.getElementById('skyPageCanvas'); return c.width > 100 && c.height > 100; })()`);
+await assert('首页星空卡 canvas 已渲染且有尺寸', `(() => { const c = document.getElementById('skyCardCanvas'); return c.width > 100 && c.height > 100; })()`);
 await assert('可见恒星 > 300 颗', `window.state && state.skyStats && state.skyStats.starsDrawn > 300`, 10000);
 await assert('星座连线 > 100 条', `window.state && state.skyStats && state.skyStats.linesDrawn > 100`);
-await assert('图例文本就绪', `document.getElementById('skyPageLegend').textContent.includes('恒星')`);
-await assert('位置含城市', `document.getElementById('skyPageLoc').textContent.includes('北京')`);
-await shot('sky-page.png');
+await assert('卡片副标题含城市与时刻', `/北京 · \\d{2}:00/.test(document.getElementById('skyCardSub').textContent)`);
+await shot('sky-card-home.png');
 
-// 2. 时间滑杆拖动重渲染
-await ev(`(() => { const s = document.getElementById('skyPageTime'); s.value = 9; s.dispatchEvent(new Event('input')); })()`);
+// 2. 点卡片 → 全屏星空弹层 + 时间滑杆
+await ev(`document.getElementById('skyCard').click()`);
+await sleep(2500);
+await assert('全屏星空弹层打开', `document.getElementById('skyFsOverlay').classList.contains('open')`);
+await assert('弹层 canvas 已渲染且有尺寸', `(() => { const c = document.getElementById('skyFsCanvas'); return c.width > 100 && c.height > 100; })()`);
+await assert('弹层星数 > 300', `window.state && state.skyFsStats && state.skyFsStats.starsDrawn > 300`);
+await assert('弹层图例文本就绪', `document.getElementById('skyFsLegend').textContent.includes('恒星')`);
+await assert('弹层位置含城市', `document.getElementById('skyFsLoc').textContent.includes('北京')`);
+await shot('sky-fs.png');
+
+await ev(`(() => { const s = document.getElementById('skyFsTime'); s.value = 9; s.dispatchEvent(new Event('input')); })()`);
 await sleep(1500);
-await assert('滑杆到 05:00 后时间标签更新', `document.getElementById('skyPageTimeLabel').textContent === '05:00'`);
-await assert('滑杆后重渲染成功（星数>300）', `window.state.skyStats && window.state.skyStats.starsDrawn > 300`);
-await ev(`(() => { const s = document.getElementById('skyPageTime'); s.value = 3; s.dispatchEvent(new Event('input')); })()`);
+await assert('滑杆到 05:00 后时间标签更新', `document.getElementById('skyFsTimeLabel').textContent === '05:00'`);
+await assert('滑杆后重渲染成功（星数>300）', `window.state.skyFsStats && window.state.skyFsStats.starsDrawn > 300`);
+await ev(`(() => { const s = document.getElementById('skyFsTime'); s.value = 3; s.dispatchEvent(new Event('input')); })()`);
 await sleep(1200);
-await shot('sky-page-2300.png');
+await shot('sky-fs-2300.png');
+await ev(`document.getElementById('skyFsClose').click()`);
+await sleep(400);
 
-// 4. 分享卡片（真实星图替换随机星点）
+// 3. 分享卡片（真实星图替换随机星点）
 await ev(`document.getElementById('btnShareCard').click()`);
 await assert('分享卡弹层打开', `document.getElementById('shareCardOverlay').classList.contains('open')`, 12000);
 await assert('分享卡图片已生成', `(() => { const i = document.getElementById('shareCardImg'); return i.src.startsWith('data:image/png') && i.naturalWidth === 880; })()`, 12000);
 await shot('share-card-real.png');
 await ev(`document.getElementById('shareCardClose').click()`);
 
-// 5. 无 JS 异常
+// 4. 无 JS 异常
 await sleep(600);
 await assert('无 JS 异常', `${consoleErrors.length} === 0`);
 

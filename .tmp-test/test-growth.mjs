@@ -73,20 +73,20 @@ await assert('勋章墙渲染 10 枚', `document.getElementById('achievementsGri
 await assert('已有勋章点亮(≥1)', `document.querySelectorAll('.ach-badge.on').length >= 1`);
 await shot('growth-badges.png');
 
-// 2. 今夜星空页：进入 +2 XP + 初识星空成就
+// 2. 今夜星空弹层：打开 +2 XP + 初识星空成就
 // 跨测试残留：test-ledger 会整库清空但 localStorage 上限键残留 → 清键并取基线，断言相对基线 +1
 await ev(`localStorage.removeItem('dayday_xp_once')`);
 const SKY_BASE = await ev(`(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length; }))`);
-await ev(`goPanel('sky')`);
+await ev(`document.getElementById('skyCard').click()`);
 await sleep(2500);
-await assert('星座标签点位已计算(>10)', `window.state && state.skyCons && state.skyCons.length > 10`, 12000);
+await assert('星座标签点位已计算(>10)', `window.state && state.skyFsCons && state.skyFsCons.length > 10`, 12000);
 await assert('今日仰望星空 +2 XP 仅一次', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === ${SKY_BASE} + 1; }))`);
 await assert('初识星空成就解锁', `(${G}.then(async g => (await g.get()).achievements?.includes('first_sky') ?? false))`);
 
 // 3. 点击星座标签 → 点亮 +8 XP + 成就
 const clickFirstConst = `(() => {
-  const c = window.state.skyCons[0];
-  const cv = document.getElementById('skyPageCanvas');
+  const c = window.state.skyFsCons[0];
+  const cv = document.getElementById('skyFsCanvas');
   const r = cv.getBoundingClientRect();
   cv.dispatchEvent(new MouseEvent('click', { clientX: r.left + c.x, clientY: r.top + c.y, bubbles: true }));
   return c.zh;
@@ -101,13 +101,14 @@ await ev(clickFirstConst);
 await sleep(800);
 await assert('重复点击不重复计分', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source.startsWith('点亮星座')).length === 1; }))`);
 
-// 4. 重进页面：每日 XP 上限
-await ev(`goPanel('stargaze')`);
+// 4. 重开弹层：每日 XP 上限
+await ev(`document.getElementById('skyFsClose').click()`);
 await sleep(500);
-await ev(`goPanel('sky')`);
+await ev(`document.getElementById('skyCard').click()`);
 await sleep(1800);
-await assert('重进页面不重复计分(每日一次)', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === ${SKY_BASE} + 1; }))`);
+await assert('重开弹层不重复计分(每日一次)', `(${G}.then(async g => { const h = (await g.get()).xpHistory || []; return h.filter(e => e.source === '仰望今夜星空' && e.date.slice(0,10) === ${TODAY}).length === ${SKY_BASE} + 1; }))`);
 await shot('growth-sky-lit.png');
+await ev(`document.getElementById('skyFsClose').click()`);
 
 // 5. 新等级曲线：注入 XP 至 3200 → Lv.7 织光者 + 猎手之名成就（若被其他套件污染高于 3200 先钳回，保证套件顺序无关）
 await ev(`(${G}.then(async g => { const x = await g.get(); if ((x.xp||0) < 3200) await g.addXP(3200 - (x.xp||0), '测试注入'); else if ((x.xp||0) > 3200) await g.setMeta({ xp: 3200 }); return true; }))`);
