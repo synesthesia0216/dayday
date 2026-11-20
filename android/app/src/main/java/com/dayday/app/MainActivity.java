@@ -40,6 +40,8 @@ public class MainActivity extends BridgeActivity {
         if (b != null && b.getWebView() != null) {
             b.getWebView().addJavascriptInterface(new ImageSaver(this), "ImageSaver");
             b.getWebView().addJavascriptInterface(new BackupSaver(this), "BackupSaver");
+            // 允许无用户手势自动播放（启动即随机播放背景音乐）
+            try { b.getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false); } catch (Throwable ignored) {}
         }
     }
 

@@ -89,11 +89,7 @@ await assert('全屏弹层出现影像（实拍或降级封面）', `(() => {
 await shot('nasa-fs-popup.png');
 await ev(`$('galaxyFsPopupClose').click()`);
 
-// 3. APOD：DEMO_KEY 可能 500 → 卡片应静默隐藏，无异常
-await sleep(1500);
-await assert('APOD 卡片要么可见要么静默隐藏', `(() => { const c = document.getElementById('apodCard'); if (c.style.display === 'none') return true; const s = document.getElementById('apodImg').src; return s.startsWith('http') || s.startsWith('blob:') || s.startsWith('data:'); })()`);
-
-// 4. API keys 设置存取往返
+// 3. API keys 设置存取往返
 await ev(`$('profileNasaKey').value = 'TESTKEY123'; $('profileAstronomyId').value = 'test-app-id'; $('profileAstronomySecret').value = 'test-secret';`);
 await ev(`(async () => { const s = await (await import('../client/db.js')).default.settings; await s.set('nasa_key','TESTKEY123'); await s.set('astro_api_id','test-app-id'); await s.set('astro_api_secret','test-secret'); return true; })()`);
 await assert('nasa_key 已保存', `import('../client/db.js').then(async m => (await m.default.settings.get('nasa_key')) === 'TESTKEY123')`);

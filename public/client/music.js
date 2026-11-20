@@ -51,5 +51,13 @@ function setTrack(id) {
 function setVolume(v) {
   getAudio().volume = Math.max(0, Math.min(1, v));
 }
+function playRandom() {
+  const i = Math.floor(Math.random() * TRACKS.length);
+  state.trackId = TRACKS[i].id;
+  save();
+  started = true;
+  play();
+  return TRACKS[i];
+}
 
-export default { TRACKS, load, toggle, setTrack, setVolume, isPlaying, currentTrack, get started() { return started; } };
+export default { TRACKS, load, toggle, setTrack, setVolume, playRandom, isPlaying, currentTrack, get started() { return started; } };

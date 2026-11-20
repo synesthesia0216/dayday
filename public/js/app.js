@@ -367,6 +367,9 @@ async function showApp() {
   if (!onboardDone) showOnboard();
   // 自动备份（每日首次启动，空库跳过）
   setTimeout(() => autoBackup(), 2500);
+  // 启动即随机播放背景音乐（解锁进入后）
+  music.playRandom();
+  renderMusicUI();
 }
 
 // ====== Onboarding (首次设置名字和头像) ======
@@ -2384,46 +2387,6 @@ async function applyObjectImage(obj, imgId, creditId, fallbackId, artW, artH) {
   }
 }
 
-// ====== 每日天文图 APOD（需 NASA key，默认 DEMO_KEY 公共额度） ======
-let apodLoaded = false;
-async function loadApod() {
-  if (apodLoaded) return;
-  apodLoaded = true;
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = (await db.settings.get('nasa_key')) || 'DEMO_KEY';
-    const cacheKey = 'apod_' + today;
-    let apod = null;
-    const hit = await db.mediaCache.get(cacheKey);
-    if (hit?.blob) { apod = { blob: hit.blob, meta: hit.meta }; }
-    else {
-      let r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}&thumbs=true&date=${today}`);
-      if (!r.ok) r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}&thumbs=true`);
-      if (!r.ok) return; // 无网或额度超限：静默不显示
-      const j = await r.json();
-      const url = j.media_type === 'image' ? j.url : (j.thumbnail_url || j.url);
-      const meta = { title: j.title, desc: j.explanation, credit: j.copyright ? '© ' + j.copyright + ' · NASA APOD' : 'NASA APOD' };
-      try {
-        const br = await fetch(url, { mode: 'cors' });
-        if (br.ok) {
-          const blob = await br.blob();
-          if (blob.size > 0) { apod = { blob, meta }; db.mediaCache.put(cacheKey, blob, meta).catch(() => {}); }
-        }
-      } catch (e) {}
-      if (!apod) apod = { src: url, meta };
-    }
-    if (apod.blob) {
-      $('apodImg').src = URL.createObjectURL(apod.blob);
-    } else if (apod.src) {
-      $('apodImg').src = apod.src;
-    } else return;
-    $('apodTitle').textContent = apod.meta.title || '';
-    $('apodDesc').textContent = (apod.meta.desc || '').slice(0, 140) + '…';
-    $('apodCredit').textContent = apod.meta.credit || 'NASA APOD';
-    $('apodCard').style.display = '';
-  } catch (e) { console.warn('APOD failed:', e); }
-}
-
 // ====== AstronomyAPI 高清星图（设置面板填 key 后解锁） ======
 async function requestHdStarChart() {
   const appId = (await db.settings.get('astro_api_id')) || '';
@@ -2506,7 +2469,6 @@ async function loadGalaxy() {
   initGalaxyView(lv);
   renderGalaxy();
   updateSavedCount();
-  loadApod();
 
   const savedCount = getSavedAstro().length;
   $('growthMetrics').innerHTML = `
