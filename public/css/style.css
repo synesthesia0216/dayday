@@ -2133,7 +2133,7 @@ button{cursor:pointer;font-family:inherit}
   color:var(--text);font-size:13px;padding:8px 10px;font-family:inherit;
 }
 .ledger-note{flex:1;}
-.ledger-date{width:132px;opacity:.8;}
+.ledger-date{width:150px;opacity:.8;}
 .ledger-note:focus,.ledger-date:focus{outline:none;border-color:var(--ring);opacity:1;}
 .ledger-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
 .ledger-keypad button{
@@ -2310,7 +2310,7 @@ button{cursor:pointer;font-family:inherit}
 }
 /* 环视一圈后：瞳孔隐去，眼睑合拢成一条细弧 */
 .eye-intro.p2 .ei-iris-wrap{opacity:0;transform:scale(.65);animation:none;}
-.eye-intro.p2 .ei-socket{opacity:1;transform:scaleY(.12);}
+.eye-intro.p2 .ei-socket{opacity:0;transform:scaleY(0);}
 /* 眼睛隐去后，DAY-DAY 字样在眼球位置浮现 */
 .ei-text{
   position:absolute;left:0;top:138px;width:100%;text-align:center;
