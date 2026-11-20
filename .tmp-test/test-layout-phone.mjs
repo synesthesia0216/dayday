@@ -100,7 +100,8 @@ for (const [W, H] of WIDTHS) {
     // C 核心内容
     const c = await ev(`(() => {
       const checks = {
-        stargaze: () => { const c = document.getElementById('moonHeroCanvas'); const s = document.getElementById('skyCardCanvas'); return c && c.width > 100 && s && s.width > 100 && document.querySelectorAll('#planetList .planet-row').length >= 1; },
+        stargaze: () => { const c = document.getElementById('moonHeroCanvas'); return c && c.width > 100 && document.querySelectorAll('.hero-stat').length >= 3; },
+        sky: () => { const c = document.getElementById('skyPageCanvas'); return c && c.width > 100 && document.querySelectorAll('#planetList .planet-row').length >= 1; },
         records: () => !!document.querySelector('#weeklyCard .w-row') && document.getElementById('calendar').children.length > 0 && document.getElementById('moodDist').children.length > 0 && !!document.getElementById('wordTrend'),
         ephemeris: () => document.getElementById('ephYearStats') && document.getElementById('ephYearStats').children.length === 4,
         galaxy: () => document.getElementById('galaxyView') && document.getElementById('galaxyView').children.length > 0,

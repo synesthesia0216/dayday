@@ -287,10 +287,10 @@ button{cursor:pointer;font-family:inherit}
 
 .panel{display:none;}
 .panel.active{display:flex;flex-direction:column;height:100%;overflow:hidden;}
-.panel-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
+.panel-scroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;}
 
 /* 观星台（今夜）：整页滚动 + 统一呼吸间距 */
-#panel-stargaze{overflow-y:auto;-webkit-overflow-scrolling:touch;gap:14px;padding-bottom:24px;}
+#panel-stargaze{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;gap:14px;padding-bottom:24px;}
 /* 观测日志（回顾）：滚动区纵向排布，间距一致 */
 #panel-records .panel-scroll{display:flex;flex-direction:column;gap:14px;padding-bottom:20px;}
 
@@ -1085,13 +1085,13 @@ button{cursor:pointer;font-family:inherit}
 .apod-desc{font-size:10px;color:var(--text2);line-height:1.7;user-select:text;-webkit-user-select:text;}
 
 /* ====== 高清星图按钮与弹层 ====== */
-.sky-fs-hd{
-  margin-left:auto;margin-right:12px;
+.sky-page-hd{
+  margin-left:auto;
   background:none;border:1px solid var(--gold-dim);color:var(--gold);
   padding:4px 12px;font-size:11px;cursor:pointer;border-radius:var(--r);
   font-family:inherit;font-weight:300;letter-spacing:0.06em;transition:var(--ease);
 }
-.sky-fs-hd:hover{background:var(--gold-pale);}
+.sky-page-hd:hover{background:var(--gold-pale);}
 .astro-hd-overlay{z-index:220;}
 .astro-hd-modal{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
@@ -1631,7 +1631,7 @@ button{cursor:pointer;font-family:inherit}
 .moon-modal{
   background:var(--surface);border:1px solid var(--border);
   width:380px;max-width:92vw;max-height:85vh;
-  border-radius:var(--r);overflow-y:auto;
+  border-radius:var(--r);overflow-y:auto;overflow-x:hidden;
 }
 .moon-modal-head{
   display:flex;align-items:center;justify-content:space-between;
@@ -2045,10 +2045,10 @@ button{cursor:pointer;font-family:inherit}
 .lb-line{display:flex;align-items:center;gap:8px;font-size:12px;}
 .lb-ico{width:18px;text-align:center;flex-shrink:0;}
 .lb-dot{display:inline-block;width:8px;height:8px;border-radius:50%;box-shadow:0 0 8px rgba(201,169,110,0.25);}
-.lb-name{width:34px;color:var(--text2);flex-shrink:0;}
+.lb-name{min-width:34px;max-width:56px;color:var(--text2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lb-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
 .lb-fill{height:100%;border-radius:4px;background:linear-gradient(90deg, var(--gold-dim), var(--gold));transition:width .4s var(--ease);}
-.lb-val{width:64px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums;}
+.lb-val{min-width:64px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums;flex-shrink:0;white-space:nowrap;}
 
 /* 账单列表 */
 .ledger-list{margin-top:4px;}
@@ -2090,7 +2090,7 @@ button{cursor:pointer;font-family:inherit}
 .ledger-sheet-overlay{align-items:flex-end;}
 .music-sheet-overlay{align-items:flex-end;}
 .ledger-sheet{
-  width:100%;max-width:480px;max-height:92vh;overflow-y:auto;
+  width:100%;max-width:480px;max-height:92vh;overflow-y:auto;overflow-x:hidden;
   background:var(--surface);
   background:color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
@@ -2187,7 +2187,7 @@ button{cursor:pointer;font-family:inherit}
 /* ====== 今夜星空（真实星图） ====== */
 .sky-card{
   background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r);padding:12px 16px;cursor:pointer;
+  border-radius:var(--r);padding:12px 16px;cursor:default;
   display:flex;flex-direction:column;gap:8px;
 }
 .sky-card:hover{border-color:var(--ring);}
@@ -2227,30 +2227,26 @@ button{cursor:pointer;font-family:inherit}
 .eph-year-title{font-size:16px;color:var(--text);letter-spacing:0.1em;font-weight:300;}
 .eph-year-share{font-size:11px;padding:4px 12px;}
 .eph-year-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;}
-.eph-year-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
-.ey-stat{text-align:center;padding:10px 2px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);}
-.ey-num{font-size:22px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
-.ey-label{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:0.08em;}
-.ey-sub{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:0.02em;line-height:1.5;}
-@media(max-width:430px){.eph-year-stats{grid-template-columns:repeat(2,1fr);}}
+.eph-year-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
+@media(min-width:600px){.eph-year-stats{grid-template-columns:repeat(4,1fr);}}
+.ey-stat{min-width:0;text-align:center;padding:12px 4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);}
+.ey-num{font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+.ey-label{font-size:11px;color:var(--text2);margin-top:3px;letter-spacing:0.08em;}
+.ey-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.02em;line-height:1.6;overflow-wrap:break-word;word-break:break-all;}
 .eph-year-high{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;display:flex;flex-direction:column;gap:7px;}
 .ey-high-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text2);line-height:1.7;letter-spacing:0.03em;}
 .ey-high-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:7px;}
 .ey-high-txt b{color:var(--text);font-weight:500;}
 
 /* ====== 今夜星空（首页小卡 + 全屏弹层） ====== */
-#skyCardCanvas{width:100%;height:210px;border-radius:calc(var(--r)*0.8);}
-.sky-card-hint{font-size:10px;color:var(--text3);text-align:center;letter-spacing:0.06em;}
-.sky-fs-overlay{background:rgba(3,5,12,.96);flex-direction:column;align-items:stretch;}
-.sky-fs-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;}
-.sky-fs-title{font-size:15px;color:var(--text);font-weight:300;letter-spacing:0.08em;}
-.sky-fs-title i{font-style:normal;font-size:11px;color:var(--text3);margin-left:10px;letter-spacing:0.04em;}
-.sky-fs-body{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
-#skyFsCanvas{width:min(100%,76vh);height:100%;}
-.sky-fs-legend{font-size:10px;color:var(--text3);padding:8px 18px 4px;letter-spacing:0.05em;text-align:center;flex-shrink:0;}
-.sky-fs-slider-wrap{padding:6px 18px 22px;width:100%;max-width:560px;margin:0 auto;flex-shrink:0;}
-#skyFsTime{width:100%;accent-color:var(--gold);}
-.sky-fs-time-label{text-align:center;font-size:12px;color:var(--gold);letter-spacing:0.1em;margin-top:6px;}
+/* 今夜星空独立页 */
+.sky-page-loc{font-size:11px;color:var(--text3);letter-spacing:0.04em;margin-left:auto;font-variant-numeric:tabular-nums;}
+.sky-page-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px;}
+#skyPageCanvas{display:block;width:100%;height:auto;border-radius:calc(var(--r)*0.8);cursor:pointer;}
+.sky-page-legend{font-size:10px;color:var(--text3);text-align:center;letter-spacing:0.05em;padding:8px 0 2px;}
+.sky-page-slider{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;}
+#skyPageTime{width:100%;accent-color:var(--gold);}
+.sky-page-time{text-align:center;font-size:12px;color:var(--gold);letter-spacing:0.1em;margin-top:6px;font-variant-numeric:tabular-nums;}
 
 /* ====== 月相 Hero（真实月面影像） ====== */
 .moon-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 0 2px;}

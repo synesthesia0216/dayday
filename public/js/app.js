@@ -199,7 +199,7 @@ let token = localStorage.getItem('nox_token') || '';
 let state = {
   panel: 'stargaze', notes: [], diary: [], reminders: [], checkins: [],
   todayCheckin: null, streak: 0, noteType: 'all',
-  skyCons: [], skyLitCons: [], skyFsCons: [],
+  skyCons: [], skyLitCons: [],
   calYear: 0, calMonth: 0, selectedMoon: null,
   editing: null, sTimer: null,
   storyTab: 'collection', profile: null,
@@ -659,7 +659,7 @@ $('btnSaveProfile').addEventListener('click', async () => {
   await db.settings.set('astro_api_id', $('profileAstronomyId').value.trim() || null);
   await db.settings.set('astro_api_secret', $('profileAstronomySecret').value.trim() || null);
   state.obs = null; // 让下次读取重新加载
-  renderSkyCard();
+  renderSkyPage();
   renderProfile();
   $('profileOverlay').classList.remove('open');
   toast('星轨档案已更新');
@@ -759,7 +759,7 @@ function refreshPanel() {
   if (state.panel !== 'startrail') { state.diary = []; }
   if (state.panel !== 'navigate') { state.reminders = []; }
   if (state.panel !== 'myth') { state.storyCollection = null; }
-  const fn = { stargaze: loadStargaze, records: loadRecords, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphYear(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
+  const fn = { stargaze: loadStargaze, sky: loadSkyPage, records: loadRecords, starchart: loadNotes, startrail: loadDiary, myth: loadMyth, galaxy: loadGalaxy, navigate: loadReminders, ephemeris: () => { renderEphMonth(); renderEphemeris().catch(() => {}); }, ledger: () => ledger && ledger.refresh() };
   (fn[state.panel] || (() => {}))();
   updateStats();
 }
@@ -1069,15 +1069,6 @@ async function loadStargaze() {
   state.moonData = await moonCalc.getMoonPhase();
   await loadStargazeData();
   renderMoodGrid();
-  // 今夜星空卡（仅可见时刷新，防后台耗电）
-  await renderSkyCard();
-  await renderPlanetCard();
-  if (!state.skyTimer) {
-    state.skyTimer = setInterval(() => {
-      const active = $('panel-stargaze').classList.contains('active') && document.visibilityState === 'visible';
-      if (active) { renderSkyCard(); renderPlanetCard(); }
-    }, 60000);
-  }
   // Moon hero
   if (state.moonData) {
     const m = state.moonData;
@@ -1252,46 +1243,25 @@ async function drawPlanetsLayer(ctx, opts) {
   return drawn;
 }
 
-// ====== 今夜星空（首页小卡 + 全屏弹层） ======
-async function renderSkyCard() {
+// ====== 今夜星空（独立页：大星图 + 时间滑杆 + 今日行星） ======
+function skyPageHour() { return (20 + parseInt($('skyPageTime').value)) % 24; }
+
+async function renderSkyPage() {
   if (!sky || !state.obs && !(await getObsLocation())) return;
-  const cv = $('skyCardCanvas');
-  const w = cv.clientWidth || 340, h = 190;
-  if (w < 50) { setTimeout(renderSkyCard, 400); return; } // 容器未布局（真机偶发 0 宽）
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  cv.width = w * dpr; cv.height = h * dpr;
-  const ctx = cv.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const date = skyDateAt(pickSkyHour());
-  const R = Math.min(w / 2 - 16, h / 2 - 12);
-  try {
-    state.skyStats = await sky.render(ctx, { lat: state.obs.lat, lon: state.obs.lon, date, cx: w / 2, cy: h / 2 + 2, radius: R, w, h, showLabels: false });
-    await drawPlanetsLayer(ctx, { date, lat: state.obs.lat, lon: state.obs.lon, cx: w / 2, cy: h / 2 + 2, R, mini: true });
-    const hh = String(date.getHours()).padStart(2, '0');
-    $('skyCardSub').textContent = `${state.obs.city} · ${hh}:00`;
-  } catch (e) {
-    console.error('renderSkyCard failed:', e);
-    $('skyCardSub').textContent = '星图数据未就绪，稍后自动重试';
-    // 数据文件首次拉取偶发失败（慢设备/冷启动），稍后重试一次
-    setTimeout(() => { if ($('panel-stargaze').classList.contains('active')) renderSkyCard(); }, 1500);
-  }
-}
-
-function skyFsHour() { return (20 + parseInt($('skyFsTime').value)) % 24; }
-
-async function renderSkyFs() {
-  if (!sky) return;
-  const cv = $('skyFsCanvas');
-  const wrap = $('skyFsOverlay').querySelector('.sky-fs-body');
-  const w = wrap.clientWidth, h = wrap.clientHeight;
-  if (w < 50 || h < 50) { setTimeout(renderSkyFs, 400); return; } // 弹层未布局时稍后重试
+  const cv = $('skyPageCanvas');
+  const wrap = cv.parentElement;
+  // 尺寸完全由 JS 决定：宽取容器，高由宽换算，不依赖 vh/clientHeight（真机 WebView 偶发 0 高导致空白）
+  const w = Math.max(50, Math.round(wrap.clientWidth || Math.min(window.innerWidth - 48, 390)));
+  if (w < 50) { requestAnimationFrame(renderSkyPage); return; }
+  const h = Math.min(460, Math.max(250, Math.round(w * 0.72)));
+  cv.style.height = h + 'px';
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = w * dpr; cv.height = h * dpr;
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const R = Math.min(w / 2 - 20, h / 2 - 16);
-  const date = skyDateAt(skyFsHour());
-  const loc = await getObsLocation();
+  const date = skyDateAt(skyPageHour());
+  const loc = state.obs;
   try {
     const r = await sky.render(ctx, {
       lat: loc.lat, lon: loc.lon, date,
@@ -1299,54 +1269,77 @@ async function renderSkyFs() {
       showStarLabels: true,
       highlight: state.skyLitCons || [],
     });
-    state.skyFsStats = r;
-    state.skyFsCons = r.constellations || [];
+    state.skyStats = r;
+    state.skyCons = r.constellations || [];
     const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: w / 2, cy: h / 2, R, mini: false });
-    $('skyFsTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
-    $('skyFsLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
-    $('skyFsLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
+    $('skyPageTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
+    $('skyPageLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
+    $('skyPageLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
     ctx.fillStyle = 'rgba(226,232,248,0.30)';
     ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
   } catch (e) {
-    console.error('renderSkyFs failed:', e);
-    $('skyFsLegend').textContent = `星图渲染失败：${e && e.message ? e.message : e}`;
-    setTimeout(() => { if ($('skyFsOverlay').classList.contains('open')) renderSkyFs(); }, 1500);
+    console.error('renderSkyPage failed:', e);
+    $('skyPageLegend').textContent = `星图渲染失败：${e && e.message ? e.message : e}`;
+    setTimeout(() => { if ($('panel-sky').classList.contains('active')) renderSkyPage(); }, 1500);
   }
 }
 
-async function openSkyOverlay() {
+async function loadSkyPage() {
   const h = pickSkyHour();
   const v = h >= 20 ? h - 20 : h + 4; // 20→0, 0→4, 5→9
-  $('skyFsTime').value = Math.max(0, Math.min(9, v));
-  $('skyFsOverlay').classList.add('open');
+  $('skyPageTime').value = Math.max(0, Math.min(9, v));
   const d = await getDiscoveries();
   state.skyLitCons = d.constellations || [];
-  await renderSkyFs();
+  requestAnimationFrame(() => renderSkyPage());
+  await renderPlanetCard();
   // 填写 AstronomyAPI key 后显示「高清星图」入口
   Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {
-    $('skyFsHd').style.display = (id && sec) ? '' : 'none';
+    $('skyPageHd').style.display = (id && sec) ? '' : 'none';
   }).catch(() => {});
   xpOnce('sky_view', 2, '仰望今夜星空');
   await refreshAchievements();
   unlockAchievement('first_sky');
+  // 仅本页可见时刷新（防后台耗电）
+  if (!state.skyTimer) {
+    state.skyTimer = setInterval(() => {
+      const active = $('panel-sky').classList.contains('active') && document.visibilityState === 'visible';
+      if (active) { renderSkyPage(); renderPlanetCard(); }
+    }, 60000);
+  }
 }
 
-function closeSkyOverlay() { $('skyFsOverlay').classList.remove('open'); }
-
-$('skyCard').addEventListener('click', openSkyOverlay);
-$('skyFsClose').addEventListener('click', closeSkyOverlay);
-$('skyFsOverlay').addEventListener('click', e => { if (e.target === $('skyFsOverlay')) closeSkyOverlay(); });
-$('skyFsTime').addEventListener('input', renderSkyFs);
+$('skyPageTime').addEventListener('input', renderSkyPage);
+$('skyPageCanvas').addEventListener('click', async e => {
+  const cons = state.skyCons || [];
+  if (!cons.length) return;
+  const rect = $('skyPageCanvas').getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  let hit = null;
+  for (const c of cons) {
+    if (Math.hypot(c.x - x, c.y - y) <= 24) { hit = c; break; }
+  }
+  if (!hit) return;
+  const isNew = await discover('constellations', hit.zh);
+  if (isNew) {
+    state.skyLitCons.push(hit.zh);
+    await db.growth.addXP(8, '点亮星座 · ' + hit.zh);
+    toast('「' + hit.zh + '」已点亮 · +8 XP');
+    await unlockAchievement('first_const');
+    await checkAchievements();
+    renderSkyPage();
+  } else {
+    toast(hit.zh + ' · 已点亮');
+  }
+});
 // 旋转/系统栏变化导致尺寸变动时重渲染（防真机画布尺寸过期）
 let skyResizeT = null;
 window.addEventListener('resize', () => {
   clearTimeout(skyResizeT);
   skyResizeT = setTimeout(() => {
-    if ($('skyFsOverlay').classList.contains('open')) renderSkyFs();
-    else if ($('panel-stargaze').classList.contains('active')) renderSkyCard();
+    if ($('panel-sky').classList.contains('active')) renderSkyPage();
   }, 200);
 });
 
@@ -1376,29 +1369,6 @@ async function renderPlanetCard() {
   list.innerHTML = rows.join('');
   $('planetCardSub').textContent = vis.length ? `今夜可见 ${vis.length} 颗 · 实时历表` : '实时历表 · 全离线';
 }
-
-$('skyFsCanvas').addEventListener('click', async e => {
-  const cons = state.skyFsCons || [];
-  if (!cons.length) return;
-  const rect = $('skyFsCanvas').getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
-  let hit = null;
-  for (const c of cons) {
-    if (Math.hypot(c.x - x, c.y - y) <= 24) { hit = c; break; }
-  }
-  if (!hit) return;
-  const isNew = await discover('constellations', hit.zh);
-  if (isNew) {
-    state.skyLitCons.push(hit.zh);
-    await db.growth.addXP(8, '点亮星座 · ' + hit.zh);
-    toast('「' + hit.zh + '」已点亮 · +8 XP');
-    await unlockAchievement('first_const');
-    await checkAchievements();
-    renderSkyFs();
-  } else {
-    toast(hit.zh + ' · 已点亮');
-  }
-});
 
 // ====== 今夜打卡（心情九宫格，选中即打卡） ======
 function renderMoodGrid() {
@@ -1552,7 +1522,8 @@ async function generateShareCard() {
   if (m) {
     const moonCanvas = document.createElement('canvas');
     await renderMoonPhase(moonCanvas, m, moonSize);
-    ctx.drawImage(moonCanvas, (W - moonSize) / 2, moonY);
+    // 显式绘制尺寸：drawImage 默认按画布物理像素（手机 dpr≥2 时 520px），会把月亮放大裁切
+    ctx.drawImage(moonCanvas, (W - moonSize) / 2, moonY, moonSize, moonSize);
 
     // 月相名 + 数据
     ctx.fillStyle = '#f2ead8';
@@ -1615,6 +1586,25 @@ async function generateShareCard() {
   return canvas;
 }
 
+// 预览用 blob URL：超长 data URL 在部分手机 WebView 上加载空白（保存不受影响，故仅预览出问题）
+function showShareCardPreview(canvas) {
+  const img = $('shareCardImg');
+  if (state.shareCardBlobUrl) URL.revokeObjectURL(state.shareCardBlobUrl);
+  state.shareCardBlobUrl = null;
+  if (canvas.toBlob) {
+    canvas.toBlob(blob => {
+      if (blob) {
+        state.shareCardBlobUrl = URL.createObjectURL(blob);
+        img.src = state.shareCardBlobUrl;
+      } else {
+        img.src = canvas.toDataURL('image/png');
+      }
+    }, 'image/png');
+  } else {
+    img.src = canvas.toDataURL('image/png');
+  }
+}
+
 $('btnShareCard').addEventListener('click', async () => {
   if (!state.moonData) return;
   const today = new Date().toISOString().slice(0, 10);
@@ -1624,7 +1614,7 @@ $('btnShareCard').addEventListener('click', async () => {
   state.shareCardCanvas = canvas;
   state.shareCardIsYear = false;
   $('shareCardTitle').textContent = '今日星图';
-  $('shareCardImg').src = canvas.toDataURL('image/png');
+  showShareCardPreview(canvas);
   $('shareCardOverlay').classList.add('open');
 });
 
@@ -2449,7 +2439,7 @@ async function requestHdStarChart() {
   toast('正在请求高清星图…');
   try {
     const loc = await getObsLocation();
-    const d = skyDateAt(skyFsHour());
+    const d = skyDateAt(skyPageHour());
     const { gmstDeg } = await import('../client/star-chart.js');
     const lst = (gmstDeg(d) + loc.lon + 360) % 360;
     const body = {
@@ -2478,7 +2468,7 @@ async function requestHdStarChart() {
     toast('高清星图请求失败，请检查 key 与网络');
   }
 }
-$('skyFsHd').addEventListener('click', requestHdStarChart);
+$('skyPageHd').addEventListener('click', requestHdStarChart);
 $('astroHdClose').addEventListener('click', () => $('astroHdOverlay').classList.remove('open'));
 $('astroHdOverlay').addEventListener('click', e => { if (e.target === $('astroHdOverlay')) $('astroHdOverlay').classList.remove('open'); });
 
@@ -3479,75 +3469,76 @@ async function renderEphemeris() {
   });
 }
 
-// ====== 年度星历：全年统计 + 星卡分享 ======
-let _yearAlmanac = null; // { year, moons:[], showers:[], eclipses:[], conjCount, conjBusiestMonth }
+// ====== 月度星历：本月统计 + 星卡分享 ======
+let _monthAlmanac = null; // { key, year, month, moons:[], showers:[], eclipses:[], conj:[] }
 
-function buildYearAlmanac() {
+function buildMonthAlmanac() {
   const now = new Date();
-  const y = now.getFullYear();
-  if (_yearAlmanac && _yearAlmanac.year === y) return _yearAlmanac;
+  const y = now.getFullYear(), m = now.getMonth();
+  const key = y * 12 + m;
+  if (_monthAlmanac && _monthAlmanac.key === key) return _monthAlmanac;
   if (!planets) return null;
 
-  // 全年满月（ELP 历表逐次推进）
+  const start = new Date(y, m, 1);
+  const end = new Date(y, m + 1, 0, 23, 59, 59);
+
+  // 本月满月（ELP 历表逐次推进）
   const moons = [];
-  let t = new Date(y, 0, 1);
-  for (let i = 0; i < 15; i++) {
+  let t = new Date(start);
+  for (let i = 0; i < 3; i++) {
     const fn = planets.nextFullNewMoon(t, 180);
-    if (!fn || fn.date.getFullYear() !== y) break;
-    moons.push(fn.date);
+    if (!fn || fn.date > end) break;
+    if (fn.date.getFullYear() === y && fn.date.getMonth() === m) moons.push(fn.date);
     t = new Date(fn.date.getTime() + 5 * 86400e3);
   }
 
-  // 全年流星雨峰值（年度循环）
-  const showers = METEOR_SHOWERS.map(s => new Date(y, s.month - 1, s.day, 22, 0, 0));
+  // 本月流星雨峰值
+  const showers = METEOR_SHOWERS.filter(s => s.month === m + 1).map(s => new Date(y, m, s.day, 22, 0, 0));
 
-  // 本年日月食
+  // 本月日月食
+  const mm = String(m + 1).padStart(2, '0');
   const eclipses = ECLIPSES
-    .filter(e => e.date.startsWith(String(y)))
-    .map(e => { const [yy, mm, dd] = e.date.split('-').map(Number); return { ...e, at: new Date(yy, mm - 1, dd, 14, 0, 0) }; });
+    .filter(e => e.date.startsWith(`${y}-${mm}`))
+    .map(e => { const [yy, mo, dd] = e.date.split('-').map(Number); return { ...e, at: new Date(yy, mo - 1, dd, 14, 0, 0) }; });
 
-  // 全年行星合相（<3° / 月-行星 <4°）与最密月份
-  const conj = planets.conjunctions(new Date(y, 0, 1), 365).filter(c => c.date.getFullYear() === y);
-  const monthCount = {};
-  for (const c of conj) { const m = c.date.getMonth() + 1; monthCount[m] = (monthCount[m] || 0) + 1; }
-  let busiest = 0, busiestCount = 0;
-  for (const [m, n] of Object.entries(monthCount)) if (n > busiestCount) { busiest = +m; busiestCount = n; }
+  // 本月行星合相（<3° / 月-行星 <4°）
+  const conj = planets.conjunctions(start, 32).filter(c => c.date.getFullYear() === y && c.date.getMonth() === m);
 
-  _yearAlmanac = { year: y, moons, showers, eclipses, conjCount: conj.length, conjBusiestMonth: busiest, conjBusiestCount: busiestCount };
-  return _yearAlmanac;
+  _monthAlmanac = { key, year: y, month: m + 1, moons, showers, eclipses, conj };
+  return _monthAlmanac;
 }
 
-function renderEphYear() {
+function renderEphMonth() {
   const el = $('ephYear');
   if (!el) return;
-  const a = buildYearAlmanac();
+  const a = buildMonthAlmanac();
   if (!a) { el.style.display = 'none'; return; }
   el.style.display = '';
   const now = new Date();
-  const remain = arr => arr.filter(d => d.getTime() > now.getTime()).length;
-  $('ephYearSub').textContent = `${a.year} 年 · 全年天象总览 · 满月 ${a.moons.length} 场`;
+  $('ephYearSub').textContent = `${a.year} 年 ${a.month} 月 · 本月天象 · 满月 ${a.moons.length} 场`;
 
+  const showerTop = a.showers.length ? a.showers.reduce((b, s) => (s.zhr > b.zhr ? s : b)) : null;
   const stats = [
-    { num: a.moons.length, label: '满月', sub: `还剩 ${remain(a.moons)} 场` },
-    { num: a.showers.length, label: '流星雨', sub: `还剩 ${remain(a.showers)} 场` },
-    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `还剩 ${remain(a.eclipses.map(e => e.at))} 场` : '今年无' },
-    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密 ${a.conjBusiestMonth} 月 · ${a.conjBusiestCount} 场` : '全年无' },
+    { num: a.moons.length, label: '满月', sub: a.moons.length ? `${a.moons[0].getDate()} 日 · 已过 ${a.moons[0].getTime() < now.getTime() ? 1 : 0} 场` : '本月无' },
+    { num: a.showers.length, label: '流星雨峰值', sub: showerTop ? `${showerTop.name} ${showerTop.day} 日` : '本月无' },
+    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `${a.eclipses[0].name} ${a.eclipses[0].at.getDate()} 日` : '本月无' },
+    { num: a.conj.length, label: '行星合相', sub: a.conj.length ? `最近 ${a.conj[0].date.getMonth() + 1} 月 ${a.conj[0].date.getDate()} 日` : '本月无' },
   ];
   $('ephYearStats').innerHTML = stats.map(s => `<div class="ey-stat"><div class="ey-num">${s.num}</div><div class="ey-label">${s.label}</div><div class="ey-sub">${s.sub}</div></div>`).join('');
 
-  // 观测亮点：最佳流星雨 + 最壮观日月食 + 下次满月
-  const topShower = METEOR_SHOWERS.reduce((b, s) => (s.zhr > b.zhr ? s : b));
+  // 观测亮点：本月流星雨峰值 + 本月日月食 + 下次满月
   const eclipseScore = { '日全食': 100, '日环食': 80, '月全食': 70, '月偏食': 40 };
   const topEclipse = a.eclipses.reduce((b, e) => (b ? (eclipseScore[e.name] || 0) > (eclipseScore[b.name] || 0) ? e : b : e), null);
-  const nextFull = a.moons.find(d => d.getTime() > now.getTime());
+  const nextFull = a.moons.find(d => d.getTime() > now.getTime()) || (planets.nextFullNewMoon(now, 180) || {}).date;
   const highs = [];
-  if (topShower) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${topShower.name}峰值</b> · ${topShower.month} 月 ${topShower.day} 日 · ZHR ${topShower.zhr} · 全年最盛</span></div>`);
-  if (topEclipse) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${topEclipse.name}</b> · ${topEclipse.at.getMonth() + 1} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}</span></div>`);
+  if (showerTop) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${showerTop.name}峰值</b> · ${a.month} 月 ${showerTop.day} 日 · ZHR ${showerTop.zhr}</span></div>`);
+  if (topEclipse) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>${topEclipse.name}</b> · ${a.month} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}</span></div>`);
   if (nextFull) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>下次满月</b> · ${nextFull.getMonth() + 1} 月 ${nextFull.getDate()} 日 · 月光整夜可见</span></div>`);
+  if (!highs.length) highs.push(`<div class="ey-high-row"><span class="ey-high-dot"></span><span class="ey-high-txt"><b>本月天象平静</b> · 适合目视行星与星座</span></div>`);
   $('ephYearHigh').innerHTML = highs.join('');
 }
 
-async function generateYearShareCard() {
+async function generateMonthShareCard() {
   const scale = 2;
   const canvas = document.createElement('canvas');
   canvas.width = SHARE_CARD_W * scale;
@@ -3556,7 +3547,7 @@ async function generateYearShareCard() {
   ctx.scale(scale, scale);
   const W = SHARE_CARD_W, H = SHARE_CARD_H;
   const FONT = '"LXGW WenKai Lite","Noto Serif SC",serif';
-  const a = buildYearAlmanac();
+  const a = buildMonthAlmanac();
 
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#0d1026');
@@ -3579,10 +3570,10 @@ async function generateYearShareCard() {
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(201,169,110,0.9)';
   ctx.font = `12px ${FONT}`;
-  ctx.fillText('D A Y - D A Y  ·  年 度 星 历', W / 2, 44);
+  ctx.fillText('D A Y - D A Y  ·  月 度 星 历', W / 2, 44);
   ctx.fillStyle = 'rgba(255,255,255,0.45)';
   ctx.font = `12px ${FONT}`;
-  ctx.fillText(`${a.year} 年 · 全年天象总览`, W / 2, 66);
+  ctx.fillText(`${a.year} 年 ${a.month} 月 · 本月天象总览`, W / 2, 66);
 
   ctx.strokeStyle = 'rgba(201,169,110,0.25)';
   ctx.lineWidth = 0.8;
@@ -3590,12 +3581,12 @@ async function generateYearShareCard() {
 
   // 大数字统计 2×2
   const now = new Date();
-  const remain = arr => arr.filter(d => d.getTime() > now.getTime()).length;
+  const showerTop = a.showers.length ? a.showers.reduce((b, s) => (s.zhr > b.zhr ? s : b)) : null;
   const cells = [
-    { num: a.moons.length, label: '满月', sub: `剩余 ${remain(a.moons)} 场` },
-    { num: a.showers.length, label: '流星雨', sub: `剩余 ${remain(a.showers)} 场` },
-    { num: a.eclipses.length, label: '日月食', sub: `剩余 ${remain(a.eclipses.map(e => e.at))} 场` },
-    { num: a.conjCount, label: '行星合相', sub: a.conjBusiestMonth ? `最密 ${a.conjBusiestMonth} 月` : '—' },
+    { num: a.moons.length, label: '满月', sub: a.moons.length ? `${a.moons[0].getDate()} 日 · 整夜可见` : '本月无' },
+    { num: a.showers.length, label: '流星雨峰值', sub: showerTop ? `${showerTop.name} ${showerTop.day} 日` : '本月无' },
+    { num: a.eclipses.length, label: '日月食', sub: a.eclipses.length ? `${a.eclipses[0].name} ${a.eclipses[0].at.getDate()} 日` : '本月无' },
+    { num: a.conj.length, label: '行星合相', sub: a.conj.length ? `最近 ${a.conj[0].date.getMonth() + 1} 月 ${a.conj[0].date.getDate()} 日` : '本月无' },
   ];
   cells.forEach((c, i) => {
     const cx = i % 2 === 0 ? W * 0.28 : W * 0.72;
@@ -3618,14 +3609,14 @@ async function generateYearShareCard() {
   ctx.font = `13px ${FONT}`;
   ctx.fillText('观 测 亮 点', W / 2, 360);
 
-  const topShower = METEOR_SHOWERS.reduce((b, s) => (s.zhr > b.zhr ? s : b));
   const eclipseScore = { '日全食': 100, '日环食': 80, '月全食': 70, '月偏食': 40 };
   const topEclipse = a.eclipses.reduce((b, e) => (b ? (eclipseScore[e.name] || 0) > (eclipseScore[b.name] || 0) ? e : b : e), null);
-  const nextFull = a.moons.find(d => d.getTime() > now.getTime());
+  const nextFull = a.moons.find(d => d.getTime() > now.getTime()) || (planets.nextFullNewMoon(now, 180) || {}).date;
   const lines = [];
-  if (topShower) lines.push({ t: `${topShower.name}峰值`, d: `${topShower.month} 月 ${topShower.day} 日 · ZHR ${topShower.zhr}` });
-  if (topEclipse) lines.push({ t: topEclipse.name, d: `${topEclipse.at.getMonth() + 1} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}` });
+  if (showerTop) lines.push({ t: `${showerTop.name}峰值`, d: `${a.month} 月 ${showerTop.day} 日 · ZHR ${showerTop.zhr}` });
+  if (topEclipse) lines.push({ t: topEclipse.name, d: `${a.month} 月 ${topEclipse.at.getDate()} 日 · ${topEclipse.desc}` });
   if (nextFull) lines.push({ t: '下次满月', d: `${nextFull.getMonth() + 1} 月 ${nextFull.getDate()} 日 · 月光整夜可见` });
+  if (!lines.length) lines.push({ t: '本月天象平静', d: '适合目视行星与星座' });
   lines.forEach((l, i) => {
     const ly = 396 + i * 54;
     ctx.fillStyle = '#f2ead8';
@@ -3652,11 +3643,11 @@ async function generateYearShareCard() {
 
 $('btnEphYearShare').addEventListener('click', async () => {
   try {
-    const canvas = await generateYearShareCard();
+    const canvas = await generateMonthShareCard();
     state.shareCardCanvas = canvas;
     state.shareCardIsYear = true;
-    $('shareCardTitle').textContent = '年度星历';
-    $('shareCardImg').src = canvas.toDataURL('image/png');
+    $('shareCardTitle').textContent = '月度星历';
+    showShareCardPreview(canvas);
     $('shareCardOverlay').classList.add('open');
   } catch (e) { toast('星卡生成失败 · 稍后重试'); }
 });

@@ -58,7 +58,9 @@ await sleep(1600);
 }
 await ev(`(() => { const o = document.getElementById('onboardOverlay'); if (o && o.classList.contains('open')) o.classList.remove('open'); const t = document.getElementById('tourOverlay'); if (t) t.style.display = 'none'; return true; })()`);
 
-// 1. 今日行星卡（观星台首页）
+// 1. 今日行星卡（今夜星空独立页）
+await sleep(2500);
+await ev(`goPanel('sky')`);
 await sleep(2500);
 await assert('今日行星卡存在', `!!document.getElementById('planetCard')`);
 await assert('行星列表渲染 ≥2 行（含月球）', `document.querySelectorAll('#planetList .planet-row').length >= 2`);
@@ -68,11 +70,9 @@ console.log('  行内容：' + rows);
 await assert('无 emoji（行内不含月相符）', `![...document.querySelectorAll('#planetList .planet-row')].some(r => /[\\u{1F300}-\\u{1FAFF}]/u.test(r.textContent))`);
 await shot('planets-card.png');
 
-// 2. 打开全屏星空弹层，行星叠加画布（canvas 像素级：非零行星色像素）
-await ev(`document.getElementById('skyCard').click()`);
-await sleep(2500);
+// 2. 星空页画布：行星叠加（canvas 像素级：非零行星色像素）
 const skyPixels = await ev(`(() => {
-  const cv = document.getElementById('skyFsCanvas');
+  const cv = document.getElementById('skyPageCanvas');
   const ctx = cv.getContext('2d');
   const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
   let colored = 0;
@@ -82,20 +82,19 @@ const skyPixels = await ev(`(() => {
   }
   return colored;
 })()`);
-log(skyPixels > 50, `弹层画布含行星色亮像素 → ${skyPixels}`);
-await shot('planets-sky-card.png');
+log(skyPixels > 50, `星空页画布含行星色亮像素 → ${skyPixels}`);
+await shot('planets-sky-page.png');
 
-// 3. 弹层图例：行星标签 + 图例计数
-await assert('弹层图例含行星计数', `document.getElementById('skyFsLegend').textContent.includes('行星')`);
-await assert('弹层画布有行星标签像素（金）', `(() => {
-  const cv = document.getElementById('skyFsCanvas');
+// 3. 星空页图例：行星标签 + 图例计数
+await assert('星空页图例含行星计数', `document.getElementById('skyPageLegend').textContent.includes('行星')`);
+await assert('星空页画布有行星标签像素（金）', `(() => {
+  const cv = document.getElementById('skyPageCanvas');
   const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
   let gold = 0;
   for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i+1], b = d[i+2]; if (r > 120 && g > 95 && b < 150 && r > b) gold++; }
   return gold > 200;
 })()`);
-await shot('planets-sky-fs.png');
-await ev(`document.getElementById('skyFsClose').click()`);
+await shot('planets-sky-page-labels.png');
 
 // 4. 分享卡含行星行（canvas 无异常 + 尺寸正确）
 const shareOk = await ev(`(async () => {
