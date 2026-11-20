@@ -1249,11 +1249,8 @@ function skyPageHour() { return (20 + parseInt($('skyPageTime').value)) % 24; }
 async function renderSkyPage() {
   if (!sky || !state.obs && !(await getObsLocation())) return;
   const cv = $('skyPageCanvas');
-  const wrap = cv.parentElement;
-  // 尺寸完全由 JS 决定：宽取容器，高由宽换算，不依赖 vh/clientHeight（真机 WebView 偶发 0 高导致空白）
-  const w = Math.max(50, Math.round(wrap.clientWidth || Math.min(window.innerWidth - 48, 390)));
-  if (w < 50) { requestAnimationFrame(renderSkyPage); return; }
-  const h = Math.min(460, Math.max(250, Math.round(w * 0.72)));
+  const w = cv.clientWidth || 340, h = Math.min(460, Math.max(250, Math.round(w * 0.72)));
+  if (w < 50) { setTimeout(renderSkyPage, 400); return; } // 容器未布局（真机偶发 0 宽）
   cv.style.height = h + 'px';
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = w * dpr; cv.height = h * dpr;
@@ -1293,7 +1290,7 @@ async function loadSkyPage() {
   $('skyPageTime').value = Math.max(0, Math.min(9, v));
   const d = await getDiscoveries();
   state.skyLitCons = d.constellations || [];
-  requestAnimationFrame(() => renderSkyPage());
+  await renderSkyPage();
   await renderPlanetCard();
   // 填写 AstronomyAPI key 后显示「高清星图」入口
   Promise.all([db.settings.get('astro_api_id'), db.settings.get('astro_api_secret')]).then(([id, sec]) => {

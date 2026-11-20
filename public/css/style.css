@@ -2223,9 +2223,9 @@ button{cursor:pointer;font-family:inherit}
 
 .eph-year{margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 14px;position:relative;overflow:hidden;}
 .eph-year::before{content:'';position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,110,.55),transparent);}
-.eph-year-head{display:flex;align-items:center;justify-content:space-between;}
-.eph-year-title{font-size:16px;color:var(--text);letter-spacing:0.1em;font-weight:300;}
-.eph-year-share{font-size:11px;padding:4px 12px;}
+.eph-year-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.eph-year-title{flex:none;white-space:nowrap;font-size:16px;line-height:1.4;color:var(--text);letter-spacing:0.08em;font-weight:300;}
+.eph-year-share{flex:none;white-space:nowrap;font-size:11px;padding:4px 12px;}
 .eph-year-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;}
 .eph-year-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
 @media(min-width:600px){.eph-year-stats{grid-template-columns:repeat(4,1fr);}}
