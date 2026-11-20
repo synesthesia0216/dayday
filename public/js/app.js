@@ -1250,8 +1250,9 @@ function skyPageHour() { return (20 + parseInt($('skyPageTime').value)) % 24; }
 const SKY_W = 680, SKY_H = 490;
 
 async function renderSkyPage() {
-  if (!sky || !state.obs && !(await getObsLocation())) return;
   const cv = $('skyPageCanvas');
+  if (!sky) { $('skyPageLegend').textContent = '星图模块未就绪 · 请退出重进本页'; return; }
+  if (!state.obs && !(await getObsLocation())) { $('skyPageLegend').textContent = '观测位置未就绪 · 请在设置中定位'; return; }
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = SKY_W * dpr; cv.height = SKY_H * dpr;
   const ctx = cv.getContext('2d');
