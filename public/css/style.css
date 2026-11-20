@@ -291,6 +291,12 @@ button{cursor:pointer;font-family:inherit}
 
 /* 观星台（今夜）：整页滚动 + 统一呼吸间距 */
 #panel-stargaze{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;gap:14px;padding-bottom:24px;}
+/* section 自带 .panel-scroll 的面板：ID 压回滚动（.panel.active 的 overflow:hidden 优先级更高会锁死滚动） */
+#panel-galaxy,#panel-navigate{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+/* 星历：月度星历卡固定，仅下方 60 天列表滚动 */
+#panel-ephemeris{overflow:hidden;}
+#panel-ephemeris .eph-year{flex:none;}
+.eph-list-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
 /* 观测日志（回顾）：滚动区纵向排布，间距一致 */
 #panel-records .panel-scroll{display:flex;flex-direction:column;gap:14px;padding-bottom:20px;}
 
@@ -2223,16 +2229,17 @@ button{cursor:pointer;font-family:inherit}
 
 .eph-year{margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 16px 14px;position:relative;overflow:hidden;}
 .eph-year::before{content:'';position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,169,110,.55),transparent);}
-.eph-year-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.eph-year-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .eph-year-title{flex:none;white-space:nowrap;font-size:16px;line-height:1.4;color:var(--text);letter-spacing:0.08em;font-weight:300;}
-.eph-year-share{flex:none;white-space:nowrap;font-size:11px;padding:4px 12px;}
+.eph-year-toggle{flex:none;white-space:nowrap;font-size:11px;padding:4px 10px;}
+.eph-year-share{flex:none;white-space:nowrap;font-size:11px;padding:4px 12px;margin-left:auto;}
+.eph-year.collapsed .eph-year-sub,.eph-year.collapsed .eph-year-stats,.eph-year.collapsed .eph-year-high{display:none;}
 .eph-year-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.05em;font-variant-numeric:tabular-nums;}
-.eph-year-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
-@media(min-width:600px){.eph-year-stats{grid-template-columns:repeat(4,1fr);}}
-.ey-stat{min-width:0;text-align:center;padding:12px 4px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);}
-.ey-num{font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
-.ey-label{font-size:11px;color:var(--text2);margin-top:3px;letter-spacing:0.08em;}
-.ey-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:0.02em;line-height:1.6;overflow-wrap:break-word;word-break:break-all;}
+.eph-year-stats{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+.ey-stat{min-width:0;display:flex;align-items:center;gap:12px;text-align:left;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);}
+.ey-num{flex:none;width:40px;text-align:center;font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+.ey-label{flex:none;font-size:12px;color:var(--text2);letter-spacing:0.08em;}
+.ey-sub{margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:0.02em;line-height:1.5;text-align:right;overflow-wrap:break-word;}
 .eph-year-high{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;display:flex;flex-direction:column;gap:7px;}
 .ey-high-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text2);line-height:1.7;letter-spacing:0.03em;}
 .ey-high-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:7px;}

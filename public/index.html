@@ -391,18 +391,21 @@
   </section>
 
   <!-- 星历（天文日历） -->
-  <section class="panel panel-scroll" id="panel-ephemeris">
+  <section class="panel" id="panel-ephemeris">
     <div class="topbar"><h2>星历</h2><span class="eph-hint">未来 60 天 · 全离线历表</span></div>
     <div class="eph-year" id="ephYear">
       <div class="eph-year-head">
         <div class="eph-year-title">月度星历</div>
+        <button type="button" class="btn btn-ghost eph-year-toggle" id="btnEphYearToggle">收起</button>
         <button type="button" class="btn btn-ghost eph-year-share" id="btnEphYearShare">生成星卡</button>
       </div>
       <div class="eph-year-sub" id="ephYearSub"></div>
       <div class="eph-year-stats" id="ephYearStats"></div>
       <div class="eph-year-high" id="ephYearHigh"></div>
     </div>
-    <div class="eph-list" id="ephList"></div>
+    <div class="eph-list-scroll">
+      <div class="eph-list" id="ephList"></div>
+    </div>
   </section>
 
   <!-- 记账 -->

@@ -1246,29 +1246,29 @@ async function drawPlanetsLayer(ctx, opts) {
 // ====== 今夜星空（独立页：大星图 + 时间滑杆 + 今日行星） ======
 function skyPageHour() { return (20 + parseInt($('skyPageTime').value)) % 24; }
 
+// 月亮页同款渲染：固定逻辑分辨率 + CSS 等比缩放，不读任何布局尺寸（真机空白根因）
+const SKY_W = 680, SKY_H = 490;
+
 async function renderSkyPage() {
   if (!sky || !state.obs && !(await getObsLocation())) return;
   const cv = $('skyPageCanvas');
-  const w = cv.clientWidth || 340, h = Math.min(460, Math.max(250, Math.round(w * 0.72)));
-  if (w < 50) { setTimeout(renderSkyPage, 400); return; } // 容器未布局（真机偶发 0 宽）
-  cv.style.height = h + 'px';
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  cv.width = w * dpr; cv.height = h * dpr;
+  cv.width = SKY_W * dpr; cv.height = SKY_H * dpr;
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const R = Math.min(w / 2 - 20, h / 2 - 16);
+  const R = Math.min(SKY_W / 2 - 20, SKY_H / 2 - 16);
   const date = skyDateAt(skyPageHour());
   const loc = state.obs;
   try {
     const r = await sky.render(ctx, {
       lat: loc.lat, lon: loc.lon, date,
-      cx: w / 2, cy: h / 2, radius: R, w, h,
+      cx: SKY_W / 2, cy: SKY_H / 2, radius: R, w: SKY_W, h: SKY_H,
       showStarLabels: true,
       highlight: state.skyLitCons || [],
     });
     state.skyStats = r;
     state.skyCons = r.constellations || [];
-    const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: w / 2, cy: h / 2, R, mini: false });
+    const pDrawn = await drawPlanetsLayer(ctx, { date, lat: loc.lat, lon: loc.lon, cx: SKY_W / 2, cy: SKY_H / 2, R, mini: false });
     $('skyPageTimeLabel').textContent = String(date.getHours()).padStart(2, '0') + ':00';
     $('skyPageLoc').textContent = `${loc.city} ${loc.lat.toFixed(1)}°N ${loc.lon.toFixed(1)}°E`;
     $('skyPageLegend').textContent = `可见恒星 ${r.starsDrawn} 颗 · 星座连线 ${r.linesDrawn} 条 · 行星 ${pDrawn.filter(d => d.id !== 'moon').length} 颗 · 方位圈中心为天顶`;
@@ -1276,7 +1276,7 @@ async function renderSkyPage() {
     ctx.font = `9px "LXGW WenKai Lite","Noto Serif SC",serif`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('星空底图 ESO/S. Brunier', w / 2 + R - 6, h / 2 + R - 9);
+    ctx.fillText('星空底图 ESO/S. Brunier', SKY_W / 2 + R - 6, SKY_H / 2 + R - 9);
   } catch (e) {
     console.error('renderSkyPage failed:', e);
     $('skyPageLegend').textContent = `星图渲染失败：${e && e.message ? e.message : e}`;
@@ -1314,9 +1314,10 @@ $('skyPageCanvas').addEventListener('click', async e => {
   if (!cons.length) return;
   const rect = $('skyPageCanvas').getBoundingClientRect();
   const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const k = rect.width / SKY_W; // 逻辑坐标 → 显示坐标
   let hit = null;
   for (const c of cons) {
-    if (Math.hypot(c.x - x, c.y - y) <= 24) { hit = c; break; }
+    if (Math.hypot(c.x * k - x, c.y * k - y) <= 24) { hit = c; break; }
   }
   if (!hit) return;
   const isNew = await discover('constellations', hit.zh);
@@ -1331,14 +1332,7 @@ $('skyPageCanvas').addEventListener('click', async e => {
     toast(hit.zh + ' · 已点亮');
   }
 });
-// 旋转/系统栏变化导致尺寸变动时重渲染（防真机画布尺寸过期）
-let skyResizeT = null;
-window.addEventListener('resize', () => {
-  clearTimeout(skyResizeT);
-  skyResizeT = setTimeout(() => {
-    if ($('panel-sky').classList.contains('active')) renderSkyPage();
-  }, 200);
-});
+// 固定分辨率渲染，布局变化无需重渲染
 
 // ====== 今日行星卡（真实历表 · 今夜可见） ======
 async function renderPlanetCard() {
@@ -3511,6 +3505,7 @@ function renderEphMonth() {
   const a = buildMonthAlmanac();
   if (!a) { el.style.display = 'none'; return; }
   el.style.display = '';
+  if (localStorage.getItem('dayday_eph_collapsed')) { el.classList.add('collapsed'); $('btnEphYearToggle').textContent = '展开'; }
   const now = new Date();
   $('ephYearSub').textContent = `${a.year} 年 ${a.month} 月 · 本月天象 · 满月 ${a.moons.length} 场`;
 
@@ -3637,6 +3632,12 @@ async function generateMonthShareCard() {
 
   return canvas;
 }
+
+$('btnEphYearToggle').addEventListener('click', () => {
+  const c = $('ephYear').classList.toggle('collapsed');
+  $('btnEphYearToggle').textContent = c ? '展开' : '收起';
+  localStorage.setItem('dayday_eph_collapsed', c ? '1' : '');
+});
 
 $('btnEphYearShare').addEventListener('click', async () => {
   try {
