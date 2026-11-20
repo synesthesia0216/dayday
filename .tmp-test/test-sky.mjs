@@ -63,6 +63,7 @@ await ev(`(() => { const o = document.getElementById('onboardOverlay'); if (o &&
 await ev(`goPanel('sky')`);
 await sleep(3000);
 await assert('星空页 canvas 已渲染且有尺寸', `(() => { const c = document.getElementById('skyPageCanvas'); return c.width > 400 && c.height > 400; })()`);
+await assert('星空图已转成 <img> 显示（真机 canvas 直显空白根因）', `(() => { const i = document.getElementById('skyPageImg'); return i && i.src.startsWith('data:image/png') && i.naturalWidth > 400; })()`, 15000);
 await assert('可见恒星 > 300 颗', `window.state && state.skyStats && state.skyStats.starsDrawn > 300`, 15000);
 await assert('星座连线 > 100 条', `window.state && state.skyStats && state.skyStats.linesDrawn > 100`);
 await assert('图例含恒星计数', `document.getElementById('skyPageLegend').textContent.includes('恒星')`);

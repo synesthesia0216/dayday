@@ -1278,6 +1278,7 @@ async function renderSkyPage() {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText('星空底图 ESO/S. Brunier', SKY_W / 2 + R - 6, SKY_H / 2 + R - 9);
+    $('skyPageImg').src = cv.toDataURL('image/png');
   } catch (e) {
     console.error('renderSkyPage failed:', e);
     $('skyPageLegend').textContent = `星图渲染失败：${e && e.message ? e.message : e}`;
@@ -1310,10 +1311,10 @@ async function loadSkyPage() {
 }
 
 $('skyPageTime').addEventListener('input', renderSkyPage);
-$('skyPageCanvas').addEventListener('click', async e => {
+$('skyPageImg').addEventListener('click', async e => {
   const cons = state.skyCons || [];
   if (!cons.length) return;
-  const rect = $('skyPageCanvas').getBoundingClientRect();
+  const rect = $('skyPageImg').getBoundingClientRect();
   const x = e.clientX - rect.left, y = e.clientY - rect.top;
   const k = rect.width / SKY_W; // 逻辑坐标 → 显示坐标
   let hit = null;
